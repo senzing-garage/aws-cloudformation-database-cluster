@@ -1,0 +1,581 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: >-
+  Senzing aws-cloudformation-database-cluster: 1.0.0
+  For more information see https://github.com/Senzing/aws-cloudformation-database-cluster
+
+# -----------------------------------------------------------------------------
+# Mappings
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/mappings-section-structure.html
+# -----------------------------------------------------------------------------
+
+Mappings:
+
+  Constants:
+    Database:
+      Name: G2
+      Username: senzing
+  VpcCidrs:
+    vpc:
+      cidr: 10.0.0.0/16
+    privsubnet1:
+      cidr: 10.0.1.0/24
+    privsubnet2:
+      cidr: 10.0.2.0/24
+
+# -----------------------------------------------------------------------------
+# Resources
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+# -----------------------------------------------------------------------------
+
+Resources:
+
+# -- Iam -----------------------------------------------------------------
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
+# AWS Console: https://console.aws.amazon.com/iam/home?#/roles > Search for {stack}
+
+  IamRoleLambda:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          -
+            Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+        Version: '2012-10-17'
+      Description: !Sub "${AWS::StackName}-iam-role-lambda"
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-iam-role-lambda"
+    Type: AWS::IAM::Role
+
+# -- Logging ------------------------------------------------------------------
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-loggroup.html
+# AWS Console: https://console.aws.amazon.com/cloudwatch/home?#logsV2:log-groups > Search for {stack}
+
+  LogsLogGroupDbClusterCore:
+    Properties:
+      LogGroupName: !Sub
+        - "/aws/rds/cluster/${StackNameAsLower}-aurora-senzing-core-cluster/postgresql"
+        - StackNameAsLower: !GetAtt LambdaRunnerStackNameAsLower.OutputString
+    Type: AWS::Logs::LogGroup
+
+
+  LogsLogGroupDbClusterLibfeat:
+    Properties:
+      LogGroupName: !Sub
+        - "/aws/rds/cluster/${StackNameAsLower}-aurora-senzing-libfeat-cluster/postgresql"
+        - StackNameAsLower: !GetAtt LambdaRunnerStackNameAsLower.OutputString
+    Type: AWS::Logs::LogGroup
+
+
+  LogsLogGroupDbClusterRes:
+    Properties:
+      LogGroupName: !Sub
+        - "/aws/rds/cluster/${StackNameAsLower}-aurora-senzing-res-cluster/postgresql"
+        - StackNameAsLower: !GetAtt LambdaRunnerStackNameAsLower.OutputString
+    Type: AWS::Logs::LogGroup
+
+# -- Cloud, subnets, routing --------------------------------------------------
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-vpc.html
+# AWS Console: https://console.aws.amazon.com/vpc/home?#vpcs > Search for {stack}
+
+  Ec2Vpc:
+    Properties:
+      CidrBlock: !FindInMap
+        - VpcCidrs
+        - vpc
+        - cidr
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-ec2-vpc"
+    Type: AWS::EC2::VPC
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-subnet.html
+# AWS Console: https://console.aws.amazon.com/vpc/home?#subnets > Search for {stack}
+
+  Ec2SubnetPrivate1:
+    Properties:
+      AvailabilityZone: !Select
+          - '0'
+          - !GetAZs
+            Ref: AWS::Region
+      CidrBlock: !FindInMap
+        - VpcCidrs
+        - privsubnet1
+        - cidr
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-ec2-subnet-private-1"
+      VpcId: !Ref Ec2Vpc
+    Type: AWS::EC2::Subnet
+
+
+  Ec2SubnetPrivate2:
+    Properties:
+      AvailabilityZone: !Select
+          - '1'
+          - !GetAZs
+            Ref: AWS::Region
+      CidrBlock: !FindInMap
+        - VpcCidrs
+        - privsubnet2
+        - cidr
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-ec2-subnet-private-2"
+      VpcId: !Ref Ec2Vpc
+    Type: AWS::EC2::Subnet
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group.html
+# AWS Console: https://console.aws.amazon.com/vpc/home?#SecurityGroups > Search for {stack}
+
+  Ec2SecurityGroupInternal:
+    Properties:
+      GroupDescription: !Sub "${AWS::StackName} - ECS internal open ports."
+      SecurityGroupEgress:
+        -
+          CidrIp: 0.0.0.0/0
+          Description: All
+          IpProtocol: '-1'
+      SecurityGroupIngress:
+        -
+          CidrIp: !FindInMap
+            - VpcCidrs
+            - vpc
+            - cidr
+          Description: PostgreSQL
+          FromPort: 5432
+          IpProtocol: tcp
+          ToPort: 5432
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-ec2-security-group-internal"
+      VpcId: !Ref Ec2Vpc
+    Type: AWS::EC2::SecurityGroup
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-internetgateway.html
+# AWS Console: https://console.aws.amazon.com/vpc/home?#igws > Search for {stack}
+
+  Ec2InternetGateway:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-ec2-internet-gateway"
+    Type: AWS::EC2::InternetGateway
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-vpc-gateway-attachment.html
+# AWS Console: https://console.aws.amazon.com/vpc/home?#igws > Search for {stack} > State & VPI ID
+
+  Ec2VpcGatewayAttachment:
+    Properties:
+      InternetGatewayId: !Ref Ec2InternetGateway
+      VpcId: !Ref Ec2Vpc
+    Type: AWS::EC2::VPCGatewayAttachment
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-route-table.html
+# AWS Console: https://console.aws.amazon.com/vpc/home?#RouteTables > Search for {stack}
+
+  Ec2RouteTablePrivate:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-ec2-route-table-private"
+      VpcId: !Ref Ec2Vpc
+    Type: AWS::EC2::RouteTable
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-subnet-route-table-assoc.html
+# AWS Console: https://console.aws.amazon.com/vpc/home?#RouteTables > {name} > "Subnet Associations" tab
+
+  Ec2SubnetRouteTableAssociationPrivate1:
+    Properties:
+      RouteTableId: !Ref Ec2RouteTablePrivate
+      SubnetId: !Ref Ec2SubnetPrivate1
+    Type: AWS::EC2::SubnetRouteTableAssociation
+
+
+  Ec2SubnetRouteTableAssociationPrivate2:
+    Properties:
+      RouteTableId: !Ref Ec2RouteTablePrivate
+      SubnetId: !Ref Ec2SubnetPrivate2
+    Type: AWS::EC2::SubnetRouteTableAssociation
+
+# -- Database -----------------------------------------------------------------
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbsubnet-group.html
+# AWS Console: https://console.aws.amazon.com/rds/home#db-subnet-groups-list: > Search for {stack}
+
+  RdsDbSubnetGroup:
+    Properties:
+      DBSubnetGroupDescription: !Sub "${AWS::StackName}-db-subnet-description"
+      DBSubnetGroupName: !Sub "${AWS::StackName}-db-subnet"
+      SubnetIds:
+        - !Ref Ec2SubnetPrivate1
+        - !Ref Ec2SubnetPrivate2
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-rds-db-subnet-group"
+    Type: AWS::RDS::DBSubnetGroup
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbclusterparametergroup.html
+# AWS Console: https://console.aws.amazon.com/rds/home?#parameter-groups: > Search for {stack}
+
+  RdsDbClusterParameterGroup:
+    Properties:
+      Description: !Sub "${AWS::StackName}-rds-db-cluster-parameter-group-description"
+      Family: aurora-postgresql10
+      Parameters:
+        'synchronous_commit': 'off'
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-rds-db-cluster-parameter-group"
+    Type: AWS::RDS::DBClusterParameterGroup
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html
+# AWS Console: https://console.aws.amazon.com/rds/home?#databases: > Search for {stack}
+
+  RdsDbClusterCore:
+    DependsOn:
+     - LogsLogGroupDbClusterCore
+     - RdsDbSubnetGroup
+    Properties:
+      AvailabilityZones:
+        - !GetAtt Ec2SubnetPrivate1.AvailabilityZone
+        - !GetAtt Ec2SubnetPrivate2.AvailabilityZone
+      DatabaseName: G2
+      DBClusterIdentifier: !Sub "${AWS::StackName}-aurora-senzing-core-cluster"
+      DBClusterParameterGroupName:
+        Ref: RdsDbClusterParameterGroup
+      # FIXME: Tricky code.  See https://console.aws.amazon.com/support/home#/case/?displayId=7725760511
+      DBSubnetGroupName: !Sub
+        - "${StackNameAsLower}-db-subnet"
+        - StackNameAsLower: !GetAtt LambdaRunnerStackNameAsLower.OutputString
+      DeletionProtection: false
+      EnableHttpEndpoint: true
+      Engine: aurora-postgresql
+      EngineMode: serverless
+      EngineVersion: '10.12'
+      MasterUsername: !FindInMap [Constants, Database, Username]
+      MasterUserPassword: !GetAtt LambdaRunnerDbPassword.RandomString
+      ScalingConfiguration:
+        AutoPause: true
+        MaxCapacity: 192
+        MinCapacity: 2
+        SecondsUntilAutoPause: 3600
+#       FIXME:  Uncomment once 'TimeoutAction' is supported.
+#       https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/298
+#       https://console.aws.amazon.com/support/home#/case/?displayId=7705681311&language=en
+#       TimeoutAction: ForceApplyCapacityChange
+      StorageEncrypted: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-rds-db-core-cluster"
+      VpcSecurityGroupIds:
+        - !Ref Ec2SecurityGroupInternal
+    Type: AWS::RDS::DBCluster
+
+
+  RdsDbClusterLibfeat:
+    DependsOn:
+     - LogsLogGroupDbClusterLibfeat
+     - RdsDbSubnetGroup
+    Properties:
+      AvailabilityZones:
+        - !GetAtt Ec2SubnetPrivate1.AvailabilityZone
+        - !GetAtt Ec2SubnetPrivate2.AvailabilityZone
+      DatabaseName: G2
+      DBClusterIdentifier: !Sub "${AWS::StackName}-aurora-senzing-libfeat-cluster"
+      DBClusterParameterGroupName:
+        Ref: RdsDbClusterParameterGroup
+      # FIXME: Tricky code.  See https://console.aws.amazon.com/support/home#/case/?displayId=7725760511
+      DBSubnetGroupName: !Sub
+        - "${StackNameAsLower}-db-subnet"
+        - StackNameAsLower: !GetAtt LambdaRunnerStackNameAsLower.OutputString
+      DeletionProtection: false
+      EnableHttpEndpoint: true
+      Engine: aurora-postgresql
+      EngineMode: serverless
+      EngineVersion: '10.12'
+      MasterUsername: !FindInMap [Constants, Database, Username]
+      MasterUserPassword: !GetAtt LambdaRunnerDbPassword.RandomString
+      ScalingConfiguration:
+        AutoPause: true
+        MaxCapacity: 192
+        MinCapacity: 2
+        SecondsUntilAutoPause: 3600
+#       FIXME:  Uncomment once 'TimeoutAction' is supported.
+#       https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/298
+#       https://console.aws.amazon.com/support/home#/case/?displayId=7705681311&language=en
+#       TimeoutAction: ForceApplyCapacityChange
+      StorageEncrypted: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-rds-db-libfeat-cluster"
+      VpcSecurityGroupIds:
+        - !Ref Ec2SecurityGroupInternal
+    Type: AWS::RDS::DBCluster
+
+
+  RdsDbClusterRes:
+    DependsOn:
+     - LogsLogGroupDbClusterRes
+     - RdsDbSubnetGroup
+    Properties:
+      AvailabilityZones:
+        - !GetAtt Ec2SubnetPrivate1.AvailabilityZone
+        - !GetAtt Ec2SubnetPrivate2.AvailabilityZone
+      DatabaseName: G2
+      DBClusterIdentifier: !Sub "${AWS::StackName}-aurora-senzing-res-cluster"
+      DBClusterParameterGroupName:
+        Ref: RdsDbClusterParameterGroup
+      # FIXME: Tricky code.  See https://console.aws.amazon.com/support/home#/case/?displayId=7725760511
+      DBSubnetGroupName: !Sub
+        - "${StackNameAsLower}-db-subnet"
+        - StackNameAsLower: !GetAtt LambdaRunnerStackNameAsLower.OutputString
+      DeletionProtection: false
+      EnableHttpEndpoint: true
+      Engine: aurora-postgresql
+      EngineMode: serverless
+      EngineVersion: '10.12'
+      MasterUsername: !FindInMap [Constants, Database, Username]
+      MasterUserPassword: !GetAtt LambdaRunnerDbPassword.RandomString
+      ScalingConfiguration:
+        AutoPause: true
+        MaxCapacity: 192
+        MinCapacity: 2
+        SecondsUntilAutoPause: 3600
+#       FIXME:  Uncomment once 'TimeoutAction' is supported.
+#       https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/298
+#       https://console.aws.amazon.com/support/home#/case/?displayId=7705681311&language=en
+#       TimeoutAction: ForceApplyCapacityChange
+      StorageEncrypted: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-rds-db-res-cluster"
+      VpcSecurityGroupIds:
+        - !Ref Ec2SecurityGroupInternal
+    Type: AWS::RDS::DBCluster
+
+# -- LambdaFunction -----------------------------------------------------------
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html
+# AWS Console: https://console.aws.amazon.com/lambda/home?#/functions > Search for {stack}
+
+  LambdaFunctionRandomString:
+    DependsOn:
+     - Ec2SubnetRouteTableAssociationPrivate1
+     - Ec2SubnetRouteTableAssociationPrivate2
+    Properties:
+      Code:
+        ZipFile: |
+          #!/usr/bin/env python3
+
+          import cfnresponse
+          import json
+          import logging
+          import random
+          import string
+          import traceback
+
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+
+          def handler(event, context):
+              result = cfnresponse.SUCCESS
+              response_data = {}
+              try:
+                  logger.info("Event: {0}".format(json.dumps(event)))
+                  if event['RequestType'] in ['Create', 'Update']:
+                      properties = event.get('ResourceProperties', {})
+                      length = int(properties.get('Length', 0))
+                      response_data["RandomString"] = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+              except Exception as e:
+                  logger.error(e)
+                  traceback.print_exc()
+                  result = cfnresponse.FAILED
+              finally:
+                  cfnresponse.send(event, context, result, response_data)
+
+      Description: Generate string of random characters.
+      FunctionName: !Sub "${AWS::StackName}-lambda-random-string"
+      Handler: index.handler
+      Role: !GetAtt IamRoleLambda.Arn
+      Runtime: python3.8
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-lambda-random-string"
+      Timeout: 600
+    Type: AWS::Lambda::Function
+
+
+  LambdaFunctionStringToLower:
+    Properties:
+      Code:
+        ZipFile: |
+          #!/usr/bin/env python3
+
+          import cfnresponse
+          import json
+          import logging
+          import traceback
+
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+
+          def handler(event, context):
+              result = cfnresponse.SUCCESS
+              response_data = {}
+              try:
+                  logger.info("Event: {0}".format(json.dumps(event)))
+                  if event['RequestType'] in ['Create', 'Update']:
+                      properties = event.get('ResourceProperties', {})
+                      input_string = properties.get('InputString', '')
+                      response_data["OutputString"] = input_string.lower()
+              except Exception as e:
+                  logger.error(e)
+                  traceback.print_exc()
+                  result = cfnresponse.FAILED
+              finally:
+                  cfnresponse.send(event, context, result, response_data)
+
+      Description: Performs string.lower()
+      FunctionName: !Sub "${AWS::StackName}-lambda-string-to-lower"
+      Handler: index.handler
+      Role: !GetAtt IamRoleLambda.Arn
+      Runtime: python3.8
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-lambda-string-to-lower"
+    Type: AWS::Lambda::Function
+
+# -- Run Lambda jobs ----------------------------------------------------------
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources.html
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cfn-customresource.html
+# AWS Console: FIXME:  none?
+
+  LambdaRunnerDbPassword:
+    Properties:
+      Length: 16
+      ServiceToken: !GetAtt LambdaFunctionRandomString.Arn
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-lambda-runner-db-password"
+    Type: Custom::LambdaRunnerDbPassword
+
+
+  LambdaRunnerStackNameAsLower:
+    Properties:
+      InputString: !Sub "${AWS::StackName}"
+      ServiceToken: !GetAtt LambdaFunctionStringToLower.Arn
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-lambda-runner-stack-name-as-lower"
+    Type: Custom::LambdaRunnerStackNameAsLower
+
+# -----------------------------------------------------------------------------
+# Outputs
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/outputs-section-structure.html
+# -----------------------------------------------------------------------------
+
+Outputs:
+
+# AWS Console: https://console.aws.amazon.com/cloudformation/home?#/stacks > {stack} > Outputs
+
+  DatabaseHostCore:
+    Description: 'The connection endpoint for the DB cluster. Help: http://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#databasehostcore'
+    Export:
+      Name: !Sub "${AWS::StackName}-database-host-core"
+    Value: !GetAtt RdsDbClusterCore.Endpoint.Address
+
+  DatabaseHostLibfeat:
+    Description: 'The connection endpoint for the DB cluster. Help: http://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#databasehostlibfeat'
+    Export:
+      Name: !Sub "${AWS::StackName}-database-host-libfeat"
+    Value: !GetAtt RdsDbClusterLibfeat.Endpoint.Address
+
+  DatabaseHostRes:
+    Description: 'The connection endpoint for the DB cluster. Help: http://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#databasehostres'
+    Export:
+      Name: !Sub "${AWS::StackName}-database-host-res"
+    Value: !GetAtt RdsDbClusterRes.Endpoint.Address
+
+  DatabaseName:
+    Description: 'The name of the database. Help: http://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#databasename'
+    Export:
+      Name: !Sub "${AWS::StackName}-database-name"
+    Value: !FindInMap [Constants, Database, Name]
+
+  DatabasePassword:
+    Description: 'The randomly generated password for the database. Help: http://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#databasepassword'
+    Export:
+      Name: !Sub "${AWS::StackName}-database-password"
+    Value: !GetAtt LambdaRunnerDbPassword.RandomString
+
+  DatabasePortCore:
+    Description: 'The port number that will accept connections on this DB cluster. Help: http://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#databaseportcore'
+    Export:
+      Name: !Sub "${AWS::StackName}-database-port-core"
+    Value: !GetAtt RdsDbClusterCore.Endpoint.Port
+
+  DatabasePortLibfeat:
+    Description: 'The port number that will accept connections on this DB cluster. Help: http://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#databaseportlibfeat'
+    Export:
+      Name: !Sub "${AWS::StackName}-database-port-libfeat"
+    Value: !GetAtt RdsDbClusterLibfeat.Endpoint.Port
+
+  DatabasePortRes:
+    Description: 'The port number that will accept connections on this DB cluster. Help: http://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#databaseportres'
+    Export:
+      Name: !Sub "${AWS::StackName}-database-port-res"
+    Value: !GetAtt RdsDbClusterRes.Endpoint.Port
+
+  DatabaseUsername:
+    Description: 'The administrative user name. Help: http://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#databaseusername'
+    Export:
+      Name: !Sub "${AWS::StackName}-database-username"
+    Value: !FindInMap [Constants, Database, Username]
+
+  Ec2InternetGateway:
+    Description: 'Internet Gateway. Help: http://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#ec2-internet-gateway'
+    Export:
+      Name: !Sub "${AWS::StackName}-ec2-internet-gateway"
+    Value: !Ref Ec2InternetGateway
+
+  Ec2SecurityGroupInternal:
+    Description: 'The ID of the VPC. Help: http://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#ec2securitygroupinternal'
+    Export:
+      Name: !Sub "${AWS::StackName}-ec2-security-group-internal"
+    Value: !Ref Ec2SecurityGroupInternal
+
+  Ec2Vpc:
+    Description: 'The ID of the VPC. Help: http://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#ec2vpc'
+    Export:
+      Name: !Sub "${AWS::StackName}-ec2-VpcId"
+    Value: !Ref Ec2Vpc
+
+  Ec2VpcCidrBlock:
+    Description: 'The CidrBloc of the VPC. Help: http://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#ec2vpccidrblock'
+    Export:
+      Name: !Sub "${AWS::StackName}-ec2-VpcId-cidrblock"
+    Value: !GetAtt Ec2Vpc.CidrBlock
+
+  SubnetPrivate1:
+    Description: 'The ID of private subnet 1. Help: http://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#subnetprivate1'
+    Export:
+      Name: !Sub "${AWS::StackName}-subnet-private-1"
+    Value: !Ref Ec2SubnetPrivate1
+
+  SubnetPrivate2:
+    Description: 'The ID of private subnet 2. Help: http://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#subnetprivate2'
+    Export:
+      Name: !Sub "${AWS::StackName}-subnet-private-2"
+    Value: !Ref Ec2SubnetPrivate2
