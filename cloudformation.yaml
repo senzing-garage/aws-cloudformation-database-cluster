@@ -5,6 +5,58 @@ Description: >-
   For more information see https://github.com/Senzing/aws-cloudformation-database-cluster
 
 # -----------------------------------------------------------------------------
+# Metadata
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/metadata-section-structure.html
+# -----------------------------------------------------------------------------
+
+Metadata:
+
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: Security responsibility
+        Parameters:
+          - SecurityResponsibility
+    ParameterLabels:
+      SecurityResponsibility:
+        default: >-
+          Required: A default deployment of this template is for public demonstration only.
+          Before using authentic PII, ensure the security of your deployment.
+          The security of this deployment is your responsibility.
+          To acknowledge your understanding and acceptance of the foregoing, type “I AGREE”.
+
+# -----------------------------------------------------------------------------
+# Parameters
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html
+# -----------------------------------------------------------------------------
+
+Parameters:
+
+# AWS Console: https://console.aws.amazon.com/cloudformation/home?#/stacks > {stack} > Parameters
+
+  SecurityResponsibility:
+    AllowedPattern: '.+|^I AGREE$'
+    ConstraintDescription: SecurityResponsibility parameter must be 'I AGREE'
+    Default: '_'
+    Description: 'Help: http://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#securityresponsibility'
+    Type: String
+
+# -----------------------------------------------------------------------------
+# Rules
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/rules-section-structure.html
+# -----------------------------------------------------------------------------
+
+Rules:
+
+  ConfirmSecurityResponsibility:
+    Assertions:
+      - Assert: !Equals
+          - !Ref SecurityResponsibility
+          - 'I AGREE'
+        AssertDescription: 'Understanding responsibility and entering "I AGREE" is required to proceed.'
+
+# -----------------------------------------------------------------------------
 # Mappings
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/mappings-section-structure.html
 # -----------------------------------------------------------------------------
@@ -79,6 +131,18 @@ Resources:
       LogGroupName: !Sub
         - "/aws/rds/cluster/${StackNameAsLower}-aurora-senzing-res-cluster/postgresql"
         - StackNameAsLower: !GetAtt LambdaRunnerStackNameAsLower.OutputString
+    Type: AWS::Logs::LogGroup
+
+
+  LogsLogGroupLambdaRandomString:
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-lambda-random-string"
+    Type: AWS::Logs::LogGroup
+
+
+  LogsLogGroupLambdaStringToLower:
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-lambda-string-to-lower"
     Type: AWS::Logs::LogGroup
 
 # -- Cloud, subnets, routing --------------------------------------------------
