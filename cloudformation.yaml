@@ -609,7 +609,7 @@ Outputs:
     Value: !FindInMap [Constants, Database, Username]
 
   Ec2InternetGateway:
-    Description: 'Internet Gateway. Help: http://hub.senzing.com/aws-cloudformation-database-cluster/#ec2internetgateway
+    Description: 'Internet Gateway. Help: http://hub.senzing.com/aws-cloudformation-database-cluster/#ec2internetgateway'
     Export:
       Name: !Sub "${AWS::StackName}-ec2-internet-gateway"
     Value: !Ref Ec2InternetGateway

@@ -2,7 +2,7 @@
 
 ## Synopsis
 
-The `aws-cloudformation-database-cluster` demonstrates a Senzing deployment using an AWS Cloudformation template.
+The `aws-cloudformation-database-cluster` demonstrates a Senzing database cluster using an AWS Cloudformation template.
 
 ## Overview
 
@@ -18,8 +18,7 @@ The `aws-cloudformation-database-cluster` demonstration is an AWS Cloudformation
 1. AWS services
     1. AWS Relational Data Service (RDS) Aurora Postgres Serverless
 
-The following diagram shows the relationship of the docker containers in this docker composition.
-Arrows represent data flow.
+The following diagram shows a simplified representation of this docker composition.
 
 ![Image of architecture](architecture.png)
 
@@ -60,7 +59,6 @@ describing where we can improve.   Now on with the show...
 
 ## Expectations
 
-- **Space:** This repository and demonstration require 6 GB free disk space.
 - **Time:** Budget 40 minutes to get the demonstration up-and-running.
 - **Background knowledge:** This repository assumes a working knowledge of:
   - [AWS Cloudformation](https://github.com/Senzing/knowledge-base/blob/master/WHATIS/aws-cloudformation.md)
@@ -73,23 +71,17 @@ describing where we can improve.   Now on with the show...
    With appropriate permissions, the
    [AWS Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/)
    can help evaluate costs.
-1. Visit [AWS Cloudformation with Senzing template](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=senzing-poc&templateURL=https://s3.amazonaws.com/public-read-access/aws-cloudformation-database-cluster/cloudformation.yaml)
+1. Visit [AWS Cloudformation with Senzing template](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=senzing-db&templateURL=https://s3.amazonaws.com/public-read-access/aws-cloudformation-database-cluster/cloudformation.yaml)
 1. At lower-right, click on "Next" button.
 1. In **Specify stack details**
     1. In **Parameters**
         1. In **Security responsibility**
             1. Understand the nature of the security in the deployment.
             1. Once understood, enter "I AGREE".
-        1. In **Senzing installation**
-            1. Accept the End User License Agreement
-        1. In **Security**
-            1. Enter your email address.  Example: `me@example.com`
-    1. Other parameters are optional.
-       The default values are fine.
     1. At lower-right, click "Next" button.
 1. In **Configure stack options**
     1. At lower-right, click "Next" button.
-1. In **Review senzing-poc**
+1. In **Review senzing-db**
     1. Near the bottom, in **Capabilities**
         1. Check ":ballot_box_with_check: I acknowledge that AWS CloudFormation might create IAM resources."
     1. At lower-right, click "Create stack" button.
@@ -106,25 +98,14 @@ to draw attention to this AWS Cloudformation defect.
 
 ## Using deployment
 
-1. Visit [AWS CloudFormation console](https://console.aws.amazon.com/cloudformation/home).
-    1. Make sure correct AWS region is selected.
-1. Wait until "senzing-poc" status is `CREATE_COMPLETE`.
-    1. Senzing formation takes about 20 minutes to fully deploy.
-    1. May have to hit the refresh button a few times to get updated information.
-1. Click on "senzing-poc" stack.
-1. Click on "Outputs" tab.
-1. Open the "0penFirst" value in a new web browser tab or window.
-    1. Because this uses a self-signed certificate, a warning will come up in your browser.  Simply continue.
-    1. In the "Sign in with your email and password" dialog box, enter the *UserName* and *UserInitPassword*
-       values seen in the "Output" tab of the "senzing-poc" stack.  This is a one-time password.
-    1. In **Change Password**, enter a new password.
+1. By itself, this deployment doesn't do much.
+   It is simply the database deployment to be used by subsequent Cloudformations.
+1. Example subsequent deployments:
+    1. [aws-cloudformation-ecs-senzing-stack-basic](https://github.com/Senzing/aws-cloudformation-ecs-senzing-stack-basic)
 
 ## Additional topics
 
-1. [How to load AWS Cloudformation queue](https://github.com/Senzing/knowledge-base/blob/master/HOWTO/load-aws-cloudformation-queue.md)
 1. [How to set AWS RDS force-scaling-capacity](https://github.com/Senzing/knowledge-base/blob/master/HOWTO/set-aws-rds-force-scaling-capacity.md)
-1. [How to migrate Senzing in AWS Cloudformation](https://github.com/Senzing/knowledge-base/blob/master/HOWTO/migrate-senzing-in-cloudformation.md)
-1. [How to update Senzing license](https://github.com/Senzing/knowledge-base/blob/master/HOWTO/update-senzing-license.md)
 1. [How to migrate an AWS RDS database](https://github.com/Senzing/knowledge-base/blob/master/HOWTO/migrate-aws-rds-database.md)
 
 ### Review AWS Cloudformation
@@ -138,22 +119,15 @@ template can be see in the [AWS Management Console](https://console.aws.amazon.c
 1. CloudWatch
     1. [Log groups](https://console.aws.amazon.com/cloudwatch/home?#logsV2:log-groups)
 1. Elastic Compute Cloud (EC2)
-    1. [Load Balancers](https://console.aws.amazon.com/ec2/v2/home?#LoadBalancers:)
     1. [Network interfaces](https://console.aws.amazon.com/ec2/v2/home?#NIC)
-    1. [Target groups](https://console.aws.amazon.com/ec2/v2/home?#TargetGroups:)
 1. Identity and Access Management (IAM)
-    1. Certificates
-    1. [Policies](https://console.aws.amazon.com/iam/home?#/policies)
     1. [Roles](https://console.aws.amazon.com/iam/home?#/roles)
 1. Relational Data Service (RDS)
     1. [Databases](https://console.aws.amazon.com/rds/home?#databases:)
     1. [Parameter groups](https://console.aws.amazon.com/rds/home?#parameter-groups:)
     1. [Subnet groups](https://console.aws.amazon.com/rds/home?#db-subnet-groups-list:)
 1. Virtual Private Cloud (VPC)
-    1. [Elastic IP addresses](https://console.aws.amazon.com/vpc/home?#Addresses:)
-    1. [Endpoints](https://console.aws.amazon.com/vpc/home?#Endpoints:)
     1. [Internet gateways](https://console.aws.amazon.com/vpc/home?#igws)
-    1. [NAT gateways](https://console.aws.amazon.com/vpc/home?#NatGateways:)
     1. [Network ACLs](https://console.aws.amazon.com/vpc/home?#acls)
     1. [Route Tables](https://console.aws.amazon.com/vpc/home?#RouteTables)
     1. [Security Groups](https://console.aws.amazon.com/vpc/home?#SecurityGroups)
