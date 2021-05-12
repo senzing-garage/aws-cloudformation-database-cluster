@@ -2,7 +2,7 @@
 
 ## Synopsis
 
-`aws-cloudformation-database-cluster` deploys a Senzing database cluster into AWS using a Cloudformation template.
+`aws-cloudformation-database-cluster` deploys three Senzing database clusters into AWS using a Cloudformation template.
 
 ## Overview
 
@@ -139,8 +139,7 @@ template can be see in the [AWS Management Console](https://console.aws.amazon.c
 1. Visit [AWS Cloudformation console](https://console.aws.amazon.com/cloudformation/home).
 1. Choose appropriate "Stack name"
 1. Choose "Outputs" tab.
-    1. For descriptions of outputs, click on the value for `ADescriptionOfOutputs`,
-       which links to [Outputs](#outputs) further down this page.
+    1. [Outputs](#outputs) are described further down this page.
 
 ## Parameters
 
@@ -150,14 +149,7 @@ Technical information on AWS Cloudformation parameters can be seen at
 ### SecurityResponsibility
 
 1. **Synopsis:**
-   The Senzing proof-of-concept AWS Cloudformation uses
-   [AWS Cognito](https://aws.amazon.com/cognito/) for authentication,
-   and HTTPS (using a self-signed certificate) for encrypted network traffic
-   to expose services through a single, internet-facing AWS Elastic Load Balancer.
-   With exception of the
-   [senzing/sshd](https://github.com/Senzing/docker-sshd) container,
-   no tasks in the AWS Elastic Container Service (ECS) have public IP addresses.
-
+   This Cloudformation deploys resources that have no public interface.
    To enable additional security measures for the deployment in your specific environment,
    you'll need to consult with your AWS administrator.
 1. **Required:** Yes
@@ -171,25 +163,25 @@ Technical information on AWS Cloudformation parameters can be seen at
 ### DatabaseHostCore
 
 1. **Synopsis:**
-   One of 3 Senzing database servers that hold the Senzing Model.
+   One of 3 Senzing database clusters that hold the Senzing Model.
 1. **Details:**
-   See the database having a Name in the form `{StackName}-aurora-senzing-core-cluster` in the
+   See the database cluster having a Name in the form `{StackName}-aurora-senzing-core-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
 
 ### DatabaseHostLibfeat
 
 1. **Synopsis:**
-   Two of 3 Senzing database servers that hold the Senzing Model.
+   Two of 3 Senzing database clusters that hold the Senzing Model.
 1. **Details:**
-   See the database having a Name in the form `{StackName}-aurora-senzing-libfeat-cluster` in the
+   See the database cluster having a Name in the form `{StackName}-aurora-senzing-libfeat-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
 
 ### DatabaseHostRes
 
 1. **Synopsis:**
-   Three of 3 Senzing database servers that hold the Senzing Model.
+   Three of 3 Senzing database clusters that hold the Senzing Model.
 1. **Details:**
-   See the database having a Name in the form `{StackName}-aurora-senzing-res-cluster` in the
+   See the database cluster having a Name in the form `{StackName}-aurora-senzing-res-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
 
 ### DatabaseName
@@ -210,7 +202,7 @@ Technical information on AWS Cloudformation parameters can be seen at
 1. **Synopsis:**
    The port used to access the [DatabaseHostCore](#databasehostcore) database.
 1. **Details:**
-   See the database having a Name in the form `{StackName}-aurora-senzing-core-cluster` in the
+   See the database cluster having a Name in the form `{StackName}-aurora-senzing-core-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
 
 ### DatabasePortLibfeat
@@ -218,7 +210,7 @@ Technical information on AWS Cloudformation parameters can be seen at
 1. **Synopsis:**
    The port used to access the [DatabaseHostLibfeat](#databasehostlibfeat) database.
 1. **Details:**
-   See the database having a Name in the form `{StackName}-aurora-senzing-libfeat-cluster` in the
+   See the database cluster having a Name in the form `{StackName}-aurora-senzing-libfeat-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:)
 
 ### DatabasePortRes
@@ -226,7 +218,7 @@ Technical information on AWS Cloudformation parameters can be seen at
 1. **Synopsis:**
       The port used to access the [DatabaseHostRes](#databasehostres) database.
 1. **Details:**
-   See the database having a Name in the form `{StackName}-aurora-senzing-res-cluster` in the
+   See the database cluster having a Name in the form `{StackName}-aurora-senzing-res-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
 
 ### DatabaseUsername
