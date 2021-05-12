@@ -173,21 +173,24 @@ Technical information on AWS Cloudformation parameters can be seen at
 1. **Synopsis:**
    One of 3 Senzing database servers that hold the Senzing Model.
 1. **Details:**
-   More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home).
+   See the database having a Name in the form `{StackName}-aurora-senzing-core-cluster` in the
+   More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
 
 ### DatabaseHostLibfeat
 
 1. **Synopsis:**
    Two of 3 Senzing database servers that hold the Senzing Model.
 1. **Details:**
-   More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home)
+   See the database having a Name in the form `{StackName}-aurora-senzing-libfeat-cluster` in the
+   More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
 
 ### DatabaseHostRes
 
 1. **Synopsis:**
    Three of 3 Senzing database servers that hold the Senzing Model.
 1. **Details:**
-   More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home)
+   See the database having a Name in the form `{StackName}-aurora-senzing-res-cluster` in the
+   More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
 
 ### DatabaseName
 
@@ -207,21 +210,24 @@ Technical information on AWS Cloudformation parameters can be seen at
 1. **Synopsis:**
    The port used to access the [DatabaseHostCore](#databasehostcore) database.
 1. **Details:**
-   More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home).
+   See the database having a Name in the form `{StackName}-aurora-senzing-core-cluster` in the
+   More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
 
 ### DatabasePortLibfeat
 
 1. **Synopsis:**
    The port used to access the [DatabaseHostLibfeat](#databasehostlibfeat) database.
 1. **Details:**
-   More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home).
+   See the database having a Name in the form `{StackName}-aurora-senzing-libfeat-cluster` in the
+   More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:)
 
 ### DatabasePortRes
 
 1. **Synopsis:**
       The port used to access the [DatabaseHostRes](#databasehostres) database.
 1. **Details:**
-   More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home).
+   See the database having a Name in the form `{StackName}-aurora-senzing-res-cluster` in the
+   More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
 
 ### DatabaseUsername
 
@@ -235,20 +241,23 @@ Technical information on AWS Cloudformation parameters can be seen at
 1. **Synopsis:**
    For use in Cloudformation `AWS::EC2::Route` declarations.
 1. **Details:**
-   More information at [AWS VPC Console](https://console.aws.amazon.com/vpc/home?#RouteTables).
+   See the route table having a "Name" in the form `{StackName}-ec2-route-table-private` in the
+   [AWS VPC Console](https://console.aws.amazon.com/vpc/home?#RouteTables).
 
 ### Ec2SecurityGroupInternal
 
 1. **Synopsis:**
    For use in Cloudformation declarations such as `AWS::EC2::SecurityGroupIngress`.
 1. **Details:**
-   More information at [AWS VPC Console](https://console.aws.amazon.com/vpc/home?#SecurityGroups ).
+   See the security group having a "Name" in the form `{StackName}-ec2-security-group-internal` in the
+   [AWS VPC Console](https://console.aws.amazon.com/vpc/home?#SecurityGroups ).
 
 ### Ec2Vpc
 
 1. **Synopsis:**
    The AWS Resource ID of the Virtual Private Cloud (VPC).
 1. **Details:**
+   See the VPC having a "Name" in the form `{StackName}-ec2-vpc` in the
    More information at [AWS VPC Console](https://console.aws.amazon.com/vpc/home?#vpcs:).
 
 ### Ec2VpcCidrBlock
@@ -256,7 +265,8 @@ Technical information on AWS Cloudformation parameters can be seen at
 1. **Synopsis:**
    For use in Cloudformation `AWS::EC2::SecurityGroup` declarations.
 1. **Details:**
-   More information at [AWS VPC Console](https://console.aws.amazon.com/vpc/home?#vpcs).
+   See the "IPV4 CIDR" having a "Name" in the form `{StackName}-ec2-vpc` in the
+   [AWS VPC Console](https://console.aws.amazon.com/vpc/home?#vpcs).
 
 ### SubnetPrivate1
 
