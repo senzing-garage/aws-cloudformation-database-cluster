@@ -174,7 +174,7 @@ Technical information on AWS Cloudformation parameters can be seen at
    One of 3 Senzing database servers that hold the Senzing Model.
 1. **Details:**
    See the database having a Name in the form `{StackName}-aurora-senzing-core-cluster` in the
-   More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
+   [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
 
 ### DatabaseHostLibfeat
 
@@ -182,7 +182,7 @@ Technical information on AWS Cloudformation parameters can be seen at
    Two of 3 Senzing database servers that hold the Senzing Model.
 1. **Details:**
    See the database having a Name in the form `{StackName}-aurora-senzing-libfeat-cluster` in the
-   More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
+   [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
 
 ### DatabaseHostRes
 
@@ -190,7 +190,7 @@ Technical information on AWS Cloudformation parameters can be seen at
    Three of 3 Senzing database servers that hold the Senzing Model.
 1. **Details:**
    See the database having a Name in the form `{StackName}-aurora-senzing-res-cluster` in the
-   More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
+   [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
 
 ### DatabaseName
 
@@ -211,7 +211,7 @@ Technical information on AWS Cloudformation parameters can be seen at
    The port used to access the [DatabaseHostCore](#databasehostcore) database.
 1. **Details:**
    See the database having a Name in the form `{StackName}-aurora-senzing-core-cluster` in the
-   More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
+   [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
 
 ### DatabasePortLibfeat
 
@@ -219,7 +219,7 @@ Technical information on AWS Cloudformation parameters can be seen at
    The port used to access the [DatabaseHostLibfeat](#databasehostlibfeat) database.
 1. **Details:**
    See the database having a Name in the form `{StackName}-aurora-senzing-libfeat-cluster` in the
-   More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:)
+   [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:)
 
 ### DatabasePortRes
 
@@ -227,7 +227,7 @@ Technical information on AWS Cloudformation parameters can be seen at
       The port used to access the [DatabaseHostRes](#databasehostres) database.
 1. **Details:**
    See the database having a Name in the form `{StackName}-aurora-senzing-res-cluster` in the
-   More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
+   [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
 
 ### DatabaseUsername
 
