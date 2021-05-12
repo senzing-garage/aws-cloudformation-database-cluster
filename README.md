@@ -26,6 +26,8 @@ which do deploy Senzing such as
 1. In **Configure stack options**
     1. At lower-right, click "Next" button.
 1. In **Review senzing-db**
+    1. Near the bottom, in **Capabilities**
+        1. Check ":ballot_box_with_check: I acknowledge that AWS CloudFormation might create IAM resources."
     1. At lower-right, click "Create stack" button.
 
 ## A Hack

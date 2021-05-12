@@ -39,7 +39,7 @@ Parameters:
     AllowedPattern: '.+|^I AGREE$'
     ConstraintDescription: SecurityResponsibility parameter must be 'I AGREE'
     Default: '_'
-    Description: 'Help: http://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#securityresponsibility'
+    Description: 'Help: http://hub.senzing.com/aws-cloudformation-database-cluster/#securityresponsibility'
     Type: String
 
 # -----------------------------------------------------------------------------
