@@ -1,4 +1,4 @@
-# aws-cloudformation-ecs-database-cluster
+# aws-cloudformation-database-cluster
 
 ## Synopsis
 
@@ -42,5 +42,6 @@ to draw attention to this AWS Cloudformation defect.
 
 ## Additional topics
 
+1. [Details of deployment](http://hub.senzing.com/aws-cloudformation-database-cluster)
 1. [How to set AWS RDS force-scaling-capacity](https://github.com/Senzing/knowledge-base/blob/master/HOWTO/set-aws-rds-force-scaling-capacity.md)
 1. [How to migrate an AWS RDS database](https://github.com/Senzing/knowledge-base/blob/master/HOWTO/migrate-aws-rds-database.md)
