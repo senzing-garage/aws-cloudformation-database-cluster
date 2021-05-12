@@ -2,11 +2,11 @@
 
 ## Synopsis
 
-The `aws-cloudformation-database-cluster` demonstrates a Senzing database cluster using an AWS Cloudformation template.
+`aws-cloudformation-database-cluster` deploys a Senzing database cluster into AWS using a Cloudformation template.
 
 ## Overview
 
-The `aws-cloudformation-database-cluster` demonstration is an AWS Cloudformation template that creates the following resources:
+The `aws-cloudformation-database-cluster` AWS Cloudformation template creates the following resources:
 
 1. AWS infrastructure
     1. VPC
@@ -18,7 +18,7 @@ The `aws-cloudformation-database-cluster` demonstration is an AWS Cloudformation
 1. AWS services
     1. AWS Relational Data Service (RDS) Aurora Postgres Serverless
 
-The following diagram shows a simplified representation of this docker composition.
+The following diagram shows a simplified representation of this deployment.
 
 ![Image of architecture](architecture.png)
 
