@@ -105,6 +105,24 @@ Resources:
           Value: !Sub "${AWS::StackName}-iam-role-lambda"
     Type: AWS::IAM::Role
 
+
+  IamPolicyRds:
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-iam-policy-rds"
+      PolicyDocument:
+        Statement:
+          -
+            Action:
+              - rds:ModifyDBCluster
+            Effect: Allow
+            Resource:
+              - '*'
+        Version: '2012-10-17'
+      Roles:
+       - !Ref IamRoleLambda
+    Type: AWS::IAM::Policy
+
+
 # -- Logging ------------------------------------------------------------------
 
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-loggroup.html
@@ -137,6 +155,12 @@ Resources:
   LogsLogGroupLambdaRandomString:
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-lambda-random-string"
+    Type: AWS::Logs::LogGroup
+
+
+  LogsLogGroupLambdaSetRdbTimeoutAction:
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-lambda-set-rdb-timeout-action"
     Type: AWS::Logs::LogGroup
 
 
@@ -480,6 +504,57 @@ Resources:
     Type: AWS::Lambda::Function
 
 
+  LambdaFunctionSetRdbTimeoutAction:
+    Properties:
+      Code:
+        ZipFile: |
+          #!/usr/bin/env python3
+          import boto3
+          import cfnresponse
+          import json
+          import logging
+          import traceback
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+          def handler(event, context):
+              result = cfnresponse.SUCCESS
+              response_data = {}
+              try:
+                  logger.info("Event: {0}".format(json.dumps(event)))
+                  if event['RequestType'] in ['Create', 'Update']:
+                      properties = event.get('ResourceProperties', {})
+                      region = properties.get('Region')
+                      cluster_id = properties.get('DBClusterIdentifier')
+                      if cluster_id and region:
+                          client = boto3.client('rds', region_name=region)
+                          response_data = client.modify_db_cluster(
+                              DBClusterIdentifier = cluster_id,
+                              ScalingConfiguration = {
+                                  'TimeoutAction': 'ForceApplyCapacityChange'
+                              },
+                          )
+                      else:
+                          logger.error("Properties not provided in ResourceProperties")
+              except Exception as e:
+                  logger.error(e)
+                  traceback.print_exc()
+                  result = cfnresponse.FAILED
+              finally:
+                  cfnresponse.send(event, context, result, {})
+                  logger.info(response_data)
+
+      Description: Sets the RDB TimeoutAction to ForceApplyCapacityChange.
+      FunctionName: !Sub "${AWS::StackName}-lambda-set-rdb-timeout-action"
+      Handler: index.handler
+      Role: !GetAtt IamRoleLambda.Arn
+      Runtime: python3.8
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-lambda-set-rdb-timeout-action"
+      Timeout: 30
+    Type: AWS::Lambda::Function
+
+
   LambdaFunctionStringToLower:
     Properties:
       Code:
@@ -534,6 +609,39 @@ Resources:
         - Key: Name
           Value: !Sub "${AWS::StackName}-lambda-runner-db-password"
     Type: Custom::LambdaRunnerDbPassword
+
+
+  LambdaRunnerSetPostgresCoreTimeoutAction:
+    Properties:
+      DBClusterIdentifier: !Ref RdsDbClusterCore
+      Region: !Ref AWS::Region
+      ServiceToken: !GetAtt LambdaFunctionSetRdbTimeoutAction.Arn
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-lambda-runner-set-postgres-core-timeout-action"
+    Type: Custom::LambdaRunnerSetPostgresCoreTimeoutAction
+
+
+  LambdaRunnerSetPostgresLibfeatTimeoutAction:
+    Properties:
+      DBClusterIdentifier: !Ref RdsDbClusterLibfeat
+      Region: !Ref AWS::Region
+      ServiceToken: !GetAtt LambdaFunctionSetRdbTimeoutAction.Arn
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-lambda-runner-set-postgres-libfeat-timeout-action"
+    Type: Custom::LambdaRunnerSetPostgresLibfeatTimeoutAction
+
+
+  LambdaRunnerSetPostgresResTimeoutAction:
+    Properties:
+      DBClusterIdentifier: !Ref RdsDbClusterRes
+      Region: !Ref AWS::Region
+      ServiceToken: !GetAtt LambdaFunctionSetRdbTimeoutAction.Arn
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-lambda-runner-set-postgres-res-timeout-action"
+    Type: Custom::LambdaRunnerSetPostgresResTimeoutAction
 
 
   LambdaRunnerStackNameAsLower:
