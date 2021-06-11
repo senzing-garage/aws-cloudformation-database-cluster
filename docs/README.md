@@ -31,7 +31,6 @@ GitHub repository for
     1. [Legend](#legend)
 1. [Expectations](#expectations)
 1. [Demonstrate using AWS Console](#demonstrate-using-aws-console)
-1. [A Hack](#a-hack)
 1. [Using deployment](#using-deployment)
 1. [Additional topics](#additional-topics)
 1. [Parameters](#parameters)
@@ -85,16 +84,6 @@ describing where we can improve.   Now on with the show...
     1. Near the bottom, in **Capabilities**
         1. Check ":ballot_box_with_check: I acknowledge that AWS CloudFormation might create IAM resources."
     1. At lower-right, click "Create stack" button.
-
-## A Hack
-
-Unfortunately, the AWS Cloudformation template does not support a particular parameter for the AWS Aurora Postgres Serverless database
-that is needed in this stack.
-To work around this limitation, see
-[How to set AWS RDS force-scaling-capacity](https://github.com/Senzing/knowledge-base/blob/master/HOWTO/set-aws-rds-force-scaling-capacity.md).
-If possible, add a "thumbs up" to
-[AWS Cloudformation issue #298](https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/298)
-to draw attention to this AWS Cloudformation defect.
 
 ## Using deployment
 
