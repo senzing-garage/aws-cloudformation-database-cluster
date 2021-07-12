@@ -47,7 +47,7 @@ Parameters:
       - 'Single'
       - 'Multiple'
     Default: 'Multiple'
-    Description: 'Help: Install as single or multiple databases?'
+    Description: 'Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#multipledatabases'
     Type: String
 
 

@@ -135,6 +135,17 @@ template can be see in the [AWS Management Console](https://console.aws.amazon.c
 Technical information on AWS Cloudformation parameters can be seen at
 [Parameters](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html).
 
+### MultipleDatabases
+1. **Synopsis:**
+   Choose single database or Senzing database cluster.  For more information see:
+   https://senzing.zendesk.com/hc/en-us/articles/360010599254-Scaling-Out-Your-Database-With-Clustering
+1. **Required:** Yes
+1. **Type:** Choice
+1. **Allowed values:**
+    1. "Multiple"
+    2. "Single"
+2. **Default:** Multiple
+
 ### SecurityResponsibility
 
 1. **Synopsis:**
