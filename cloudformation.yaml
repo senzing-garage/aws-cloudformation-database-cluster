@@ -15,10 +15,17 @@ Metadata:
     ParameterGroups:
       -
         Label:
+          default: Senzing installation
+        Parameters:
+          - MultipleDatabases
+      -
+        Label:
           default: Security responsibility
         Parameters:
           - SecurityResponsibility
     ParameterLabels:
+      MultipleDatabases:
+        default: 'Optional: Would you like to install into a single or multiple databases?'
       SecurityResponsibility:
         default: >-
           Required: A default deployment of this template is for public demonstration only.
@@ -34,6 +41,15 @@ Metadata:
 Parameters:
 
 # AWS Console: https://console.aws.amazon.com/cloudformation/home?#/stacks > {stack} > Parameters
+
+  MultipleDatabases:
+    AllowedValues:
+      - 'Single'
+      - 'Multiple'
+    Default: 'Multiple'
+    Description: 'Help: Install as single or multiple databases?'
+    Type: String
+
 
   SecurityResponsibility:
     AllowedPattern: '.+|^I AGREE$'
@@ -74,6 +90,22 @@ Mappings:
       cidr: 10.0.1.0/24
     privsubnet2:
       cidr: 10.0.2.0/24
+
+# -----------------------------------------------------------------------------
+# Conditions
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/conditions-section-structure.html
+# -----------------------------------------------------------------------------
+
+Conditions:
+
+  IfMultipleDatabases: !Equals
+    - !Ref MultipleDatabases
+    - 'Multiple'
+
+
+  IfSingleDatabase: !Not
+    - !Equals [ !Ref MultipleDatabases,'Multiple']
+
 
 # -----------------------------------------------------------------------------
 # Resources
@@ -128,7 +160,17 @@ Resources:
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-loggroup.html
 # AWS Console: https://console.aws.amazon.com/cloudwatch/home?#logsV2:log-groups > Search for {stack}
 
+  LogsLogGroupDbCluster:
+    Condition: IfSingleDatabase
+    Properties:
+      LogGroupName: !Sub
+        - "/aws/rds/cluster/${StackNameAsLower}-aurora-senzing-cluster/postgresql"
+        - StackNameAsLower: !GetAtt LambdaRunnerStackNameAsLower.OutputString
+    Type: AWS::Logs::LogGroup
+
+
   LogsLogGroupDbClusterCore:
+    Condition: IfMultipleDatabases
     Properties:
       LogGroupName: !Sub
         - "/aws/rds/cluster/${StackNameAsLower}-aurora-senzing-core-cluster/postgresql"
@@ -137,6 +179,7 @@ Resources:
 
 
   LogsLogGroupDbClusterLibfeat:
+    Condition: IfMultipleDatabases
     Properties:
       LogGroupName: !Sub
         - "/aws/rds/cluster/${StackNameAsLower}-aurora-senzing-libfeat-cluster/postgresql"
@@ -145,6 +188,7 @@ Resources:
 
 
   LogsLogGroupDbClusterRes:
+    Condition: IfMultipleDatabases
     Properties:
       LogGroupName: !Sub
         - "/aws/rds/cluster/${StackNameAsLower}-aurora-senzing-res-cluster/postgresql"
@@ -330,7 +374,50 @@ Resources:
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html
 # AWS Console: https://console.aws.amazon.com/rds/home?#databases: > Search for {stack}
 
+  RdsDbCluster:
+    Condition: IfSingleDatabase
+    DependsOn:
+     - LogsLogGroupDbCluster
+     - RdsDbSubnetGroup
+    Properties:
+      AvailabilityZones:
+        - !GetAtt Ec2SubnetPrivate1.AvailabilityZone
+        - !GetAtt Ec2SubnetPrivate2.AvailabilityZone
+      DatabaseName: G2
+      DBClusterIdentifier: !Sub "${AWS::StackName}-aurora-senzing-cluster"
+      DBClusterParameterGroupName:
+        Ref: RdsDbClusterParameterGroup
+      # FIXME: Tricky code.  See https://console.aws.amazon.com/support/home#/case/?displayId=7725760511
+      DBSubnetGroupName: !Sub
+        - "${StackNameAsLower}-db-subnet"
+        - StackNameAsLower: !GetAtt LambdaRunnerStackNameAsLower.OutputString
+      DeletionProtection: false
+      EnableHttpEndpoint: true
+      Engine: aurora-postgresql
+      EngineMode: serverless
+      EngineVersion: '10.12'
+      MasterUsername: !FindInMap [Constants, Database, Username]
+      MasterUserPassword: !GetAtt LambdaRunnerDbPassword.RandomString
+      ScalingConfiguration:
+        AutoPause: true
+        MaxCapacity: 192
+        MinCapacity: 2
+        SecondsUntilAutoPause: 3600
+#       FIXME:  Uncomment once 'TimeoutAction' is supported.
+#       https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/298
+#       https://console.aws.amazon.com/support/home#/case/?displayId=7705681311&language=en
+#       TimeoutAction: ForceApplyCapacityChange
+      StorageEncrypted: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-rds-db-cluster"
+      VpcSecurityGroupIds:
+        - !Ref Ec2SecurityGroupInternal
+    Type: AWS::RDS::DBCluster
+
+
   RdsDbClusterCore:
+    Condition: IfMultipleDatabases
     DependsOn:
      - LogsLogGroupDbClusterCore
      - RdsDbSubnetGroup
@@ -372,6 +459,7 @@ Resources:
 
 
   RdsDbClusterLibfeat:
+    Condition: IfMultipleDatabases
     DependsOn:
      - LogsLogGroupDbClusterLibfeat
      - RdsDbSubnetGroup
@@ -413,6 +501,7 @@ Resources:
 
 
   RdsDbClusterRes:
+    Condition: IfMultipleDatabases
     DependsOn:
      - LogsLogGroupDbClusterRes
      - RdsDbSubnetGroup
@@ -611,7 +700,20 @@ Resources:
     Type: Custom::LambdaRunnerDbPassword
 
 
+  LambdaRunnerSetPostgresTimeoutAction:
+    Condition: IfSingleDatabase
+    Properties:
+      DBClusterIdentifier: !Ref RdsDbCluster
+      Region: !Ref AWS::Region
+      ServiceToken: !GetAtt LambdaFunctionSetRdbTimeoutAction.Arn
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-lambda-runner-set-postgres-timeout-action"
+    Type: Custom::LambdaRunnerSetPostgresTimeoutAction
+
+
   LambdaRunnerSetPostgresCoreTimeoutAction:
+    Condition: IfMultipleDatabases
     Properties:
       DBClusterIdentifier: !Ref RdsDbClusterCore
       Region: !Ref AWS::Region
@@ -623,6 +725,7 @@ Resources:
 
 
   LambdaRunnerSetPostgresLibfeatTimeoutAction:
+    Condition: IfMultipleDatabases
     Properties:
       DBClusterIdentifier: !Ref RdsDbClusterLibfeat
       Region: !Ref AWS::Region
@@ -634,6 +737,7 @@ Resources:
 
 
   LambdaRunnerSetPostgresResTimeoutAction:
+    Condition: IfMultipleDatabases
     Properties:
       DBClusterIdentifier: !Ref RdsDbClusterRes
       Region: !Ref AWS::Region
@@ -666,19 +770,28 @@ Outputs:
     Description: 'The connection endpoint for the DB cluster. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasehostcore'
     Export:
       Name: !Sub "${AWS::StackName}-database-host-core"
-    Value: !GetAtt RdsDbClusterCore.Endpoint.Address
+    Value: !If
+      - IfSingleDatabase
+      - !GetAtt RdsDbCluster.Endpoint.Address
+      - !GetAtt RdsDbClusterCore.Endpoint.Address
 
   DatabaseHostLibfeat:
     Description: 'The connection endpoint for the DB cluster. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasehostlibfeat'
     Export:
       Name: !Sub "${AWS::StackName}-database-host-libfeat"
-    Value: !GetAtt RdsDbClusterLibfeat.Endpoint.Address
+    Value: !If
+      - IfSingleDatabase
+      - !GetAtt RdsDbCluster.Endpoint.Address
+      - !GetAtt RdsDbClusterLibfeat.Endpoint.Address
 
   DatabaseHostRes:
     Description: 'The connection endpoint for the DB cluster. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasehostres'
     Export:
       Name: !Sub "${AWS::StackName}-database-host-res"
-    Value: !GetAtt RdsDbClusterRes.Endpoint.Address
+    Value: !If
+      - IfSingleDatabase
+      - !GetAtt RdsDbCluster.Endpoint.Address
+      - !GetAtt RdsDbClusterRes.Endpoint.Address
 
   DatabaseName:
     Description: 'The name of the database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasename'
@@ -696,19 +809,28 @@ Outputs:
     Description: 'The port number that will accept connections on this DB cluster. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databaseportcore'
     Export:
       Name: !Sub "${AWS::StackName}-database-port-core"
-    Value: !GetAtt RdsDbClusterCore.Endpoint.Port
+    Value: !If
+      - IfSingleDatabase
+      - !GetAtt RdsDbCluster.Endpoint.Port
+      - !GetAtt RdsDbClusterCore.Endpoint.Port
 
   DatabasePortLibfeat:
     Description: 'The port number that will accept connections on this DB cluster. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databaseportlibfeat'
     Export:
       Name: !Sub "${AWS::StackName}-database-port-libfeat"
-    Value: !GetAtt RdsDbClusterLibfeat.Endpoint.Port
+    Value: !If
+      - IfSingleDatabase
+      - !GetAtt RdsDbCluster.Endpoint.Port
+      - !GetAtt RdsDbClusterLibfeat.Endpoint.Port
 
   DatabasePortRes:
     Description: 'The port number that will accept connections on this DB cluster. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databaseportres'
     Export:
       Name: !Sub "${AWS::StackName}-database-port-res"
-    Value: !GetAtt RdsDbClusterRes.Endpoint.Port
+    Value: !If
+      - IfSingleDatabase
+      - !GetAtt RdsDbCluster.Endpoint.Port
+      - !GetAtt RdsDbClusterRes.Endpoint.Port
 
   DatabaseUsername:
     Description: 'The administrative user name. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databaseusername'
