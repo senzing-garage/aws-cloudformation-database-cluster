@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 
 Description: >-
-  Senzing aws-cloudformation-database-cluster: 1.0.0
+  Senzing aws-cloudformation-database-cluster: 1.1.0
   For more information see https://github.com/Senzing/aws-cloudformation-database-cluster
 
 # -----------------------------------------------------------------------------
