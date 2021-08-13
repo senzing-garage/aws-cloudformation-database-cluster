@@ -171,8 +171,6 @@ Mappings:
     Run:
       ApiServer: Yes
       Redoer: Yes
-      Sshd: Yes
-      SshdMax: No
       StreamLoader: Yes
       Swagger: Yes
       VpcFlowLogs: No
@@ -215,14 +213,6 @@ Conditions:
     - !FindInMap [Constants, Run, Redoer]
     - Yes
 
-  IfRunSshd: !Equals
-    - !FindInMap [Constants, Run, Sshd]
-    - Yes
-
-  IfRunSshdMax: !Equals
-    - !FindInMap [Constants, Run, SshdMax]
-    - Yes
-
   IfRunStreamLoader: !Equals
     - !FindInMap [Constants, Run, StreamLoader]
     - Yes
@@ -248,10 +238,6 @@ Conditions:
   IfUsingRedoQueues: !Or
     - !Condition IfRunRedoer
     - !Condition IfRunRedoer
-
-  IfUsingSshd: !Or
-    - !Condition IfRunSshd
-    - !Condition IfRunSshdMax
 
   IfUsingQueues: !Or
     - !Condition IfRunStreamLoader
@@ -515,25 +501,6 @@ Resources:
     Type: AWS::IAM::Role
 
 
-  IamRoleSshd:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          -
-            Action:
-              - sts:AssumeRole
-            Effect: Allow
-            Principal:
-              Service:
-                - ecs-tasks.amazonaws.com
-        Version: '2012-10-17'
-      Description: !Sub "${AWS::StackName}-iam-role-sshd"
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-iam-role-sshd"
-    Type: AWS::IAM::Role
-
-
   IamRoleStreamLoader:
     Properties:
       AssumeRolePolicyDocument:
@@ -713,7 +680,6 @@ Resources:
        - !Ref IamRoleInstallSenzing
        - !Ref IamRoleLambda
        - !Ref IamRoleRedoer
-       - !Ref IamRoleSshd
        - !Ref IamRoleStreamLoader
        - !Ref IamRoleStreamProducer
        - !Ref IamRoleSwagger
@@ -896,7 +862,6 @@ Resources:
        - !Ref IamRoleG2ConfigTool
        - !Ref IamRoleLambda
        - !Ref IamRoleRedoer
-       - !Ref IamRoleSshd
        - !Ref IamRoleStreamLoader
        - !Ref IamRoleSwagger
     Type: AWS::IAM::Policy
@@ -1137,15 +1102,6 @@ Resources:
             - VpcCidrs
             - vpc
             - cidr
-          Description: SSH
-          FromPort: 22
-          IpProtocol: tcp
-          ToPort: 22
-        -
-          CidrIp: !FindInMap
-            - VpcCidrs
-            - vpc
-            - cidr
           Description: HTTP
           FromPort: 80
           IpProtocol: tcp
@@ -1267,21 +1223,6 @@ Resources:
     Type: AWS::EC2::SecurityGroup
 
 
-  Ec2SecurityGroupSshd:
-    Condition: IfUsingSshd
-    Properties:
-      GroupDescription: !Sub "${AWS::StackName} - SSHD service open ports."
-      SecurityGroupEgress:
-        -
-          CidrIp: 0.0.0.0/0
-          Description: All
-          IpProtocol: '-1'
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-ec2-security-group-sshd"
-      VpcId: !Ref Ec2Vpc
-    Type: AWS::EC2::SecurityGroup
-
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group-ingress.html
 # AWS Console: https://console.aws.amazon.com/vpc/home?#SecurityGroups: > Search for {stack}-ec2-security-group-alb-public > Inbound rules
 
@@ -1306,18 +1247,6 @@ Resources:
       GroupId: !GetAtt Ec2SecurityGroupLoadBalancerPublic.GroupId
       IpProtocol: tcp
       ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-
-
-  Ec2SecurityGroupIngressSsh:
-    Condition: IfUsingSshd
-    Properties:
-      CidrIp: !Ref CidrInbound
-      Description: SSH
-      FromPort: 22
-      GroupId: !Ref Ec2SecurityGroupSshd
-      IpProtocol: tcp
-      ToPort: 22
     Type: AWS::EC2::SecurityGroupIngress
 
 
@@ -2593,18 +2522,6 @@ Resources:
     Type: Custom::LambdaRunnerSetPostgresResTimeoutAction
 
 
-  LambdaRunnerSshPassword:
-    Condition: IfUsingSshd
-    Properties:
-      ClusterId: !Ref EcsCluster
-      Length: 16
-      ServiceToken: !GetAtt LambdaFunctionRandomString.Arn
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-lambda-runner-ssh-password"
-    Type: Custom::LambdaRunnerSshPassword
-
-
   LambdaRunnerStackNameAsLower:
     Properties:
       InputString: !Sub "${AWS::StackName}"
@@ -3754,178 +3671,6 @@ Resources:
     Type: AWS::ECS::TaskDefinition
 
 
-  EcsTaskDefinitionSshd:
-    Condition: IfRunSshd
-    Properties:
-      ContainerDefinitions:
-        -
-          Environment:
-            -
-              Name: ROOT_PASSWORD
-              Value: !GetAtt LambdaRunnerSshPassword.RandomString
-            -
-              Name: SENZING_SKIP_DATABASE_PERFORMANCE_TEST
-              Value: 'true'
-          Essential: true
-          Image: public.ecr.aws/senzing/sshd:1.2.0
-          LinuxParameters:
-            Capabilities:
-              Add:
-                - SYS_PTRACE
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref LogsLogGroupMain
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: service
-          MountPoints:
-            -
-              SourceVolume: senzing-data-version-dir
-              ContainerPath: /opt/senzing/data
-              ReadOnly: false
-            -
-              SourceVolume: senzing-etc-dir
-              ContainerPath: /etc/opt/senzing
-              ReadOnly: false
-            -
-              SourceVolume: senzing-g2-dir
-              ContainerPath: /opt/senzing/g2
-              ReadOnly: false
-            -
-              SourceVolume: senzing-var-dir
-              ContainerPath: /var/opt/senzing
-              ReadOnly: false
-          Name: sshd
-          Privileged: false
-          ReadonlyRootFilesystem: false
-      Cpu: '2048'
-      ExecutionRoleArn: !GetAtt IamRoleSshd.Arn
-      Family: !Sub "${AWS::StackName}-task-definition-sshd"
-      Memory: '12288'
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - FARGATE
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-ecs-task-definition-sshd"
-      Volumes:
-        -
-          Name: senzing-data-version-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /data/2.0.0
-        -
-          Name: senzing-etc-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /etc
-        -
-          Name: senzing-g2-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /g2
-        -
-          Name: senzing-var-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /var
-    Type: AWS::ECS::TaskDefinition
-
-
-  EcsTaskDefinitionSshdMax:
-    Condition: IfRunSshdMax
-    Properties:
-      ContainerDefinitions:
-        -
-          Environment:
-            -
-              Name: ROOT_PASSWORD
-              Value: !GetAtt LambdaRunnerSshPassword.RandomString
-            -
-              Name: SENZING_SKIP_DATABASE_PERFORMANCE_TEST
-              Value: 'true'
-          Essential: true
-          Image: public.ecr.aws/senzing/sshd:1.2.0
-          LinuxParameters:
-            Capabilities:
-              Add:
-                - SYS_PTRACE
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref LogsLogGroupMain
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: service
-          MountPoints:
-            -
-              SourceVolume: senzing-data-version-dir
-              ContainerPath: /opt/senzing/data
-              ReadOnly: false
-            -
-              SourceVolume: senzing-etc-dir
-              ContainerPath: /etc/opt/senzing
-              ReadOnly: false
-            -
-              SourceVolume: senzing-g2-dir
-              ContainerPath: /opt/senzing/g2
-              ReadOnly: false
-            -
-              SourceVolume: senzing-var-dir
-              ContainerPath: /var/opt/senzing
-              ReadOnly: false
-          Name: sshd
-          Privileged: false
-          ReadonlyRootFilesystem: false
-      Cpu: '4096'
-      ExecutionRoleArn: !GetAtt IamRoleSshd.Arn
-      Family: !Sub "${AWS::StackName}-task-definition-sshd"
-      Memory: '30720'
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - FARGATE
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-ecs-task-definition-sshd"
-      Volumes:
-        -
-          Name: senzing-data-version-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /data/2.0.0
-        -
-          Name: senzing-etc-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /etc
-        -
-          Name: senzing-g2-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /g2
-        -
-          Name: senzing-var-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /var
-    Type: AWS::ECS::TaskDefinition
-
-
   EcsTaskDefinitionStreamLoader:
     Condition: IfRunStreamLoader
     Properties:
@@ -4255,60 +4000,6 @@ Resources:
     Type: AWS::ECS::Service
 
 
-  EcsServiceSshd:
-    Condition: IfRunSshd
-    DependsOn:
-     - LambdaRunnerInitSenzing
-    Properties:
-      Cluster: !Ref EcsCluster
-      DesiredCount: 1
-      EnableECSManagedTags: true
-      LaunchType: FARGATE
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
-          SecurityGroups:
-            - !Ref Ec2SecurityGroupSshd
-          Subnets:
-            - !Ref Ec2SubnetPublic1
-            - !Ref Ec2SubnetPublic2
-      PlatformVersion: 1.4.0
-      PropagateTags: TASK_DEFINITION
-      ServiceName: sshd
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-ecs-service-sshd"
-      TaskDefinition: !Ref EcsTaskDefinitionSshd
-    Type: AWS::ECS::Service
-
-
-  EcsServiceSshdMax:
-    Condition: IfRunSshdMax
-    DependsOn:
-     - LambdaRunnerInitSenzing
-    Properties:
-      Cluster: !Ref EcsCluster
-      DesiredCount: 1
-      EnableECSManagedTags: true
-      LaunchType: FARGATE
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
-          SecurityGroups:
-            - !Ref Ec2SecurityGroupSshd
-          Subnets:
-            - !Ref Ec2SubnetPublic1
-            - !Ref Ec2SubnetPublic2
-      PlatformVersion: 1.4.0
-      PropagateTags: TASK_DEFINITION
-      ServiceName: sshd-max
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-ecs-service-sshd-max"
-      TaskDefinition: !Ref EcsTaskDefinitionSshdMax
-    Type: AWS::ECS::Service
-
-
   EcsServiceStreamLoader:
     Condition: IfRunStreamLoader
     DependsOn:
@@ -4624,20 +4315,6 @@ Outputs:
     Export:
       Name: !Sub "${AWS::StackName}-senzing-version"
     Value: !FindInMap [Constants, Senzing, Version]
-
-  SshPassword:
-    Condition: IfUsingSshd
-    Description: 'The randomly generated password for SSH access. Help: https://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#sshpassword'
-    Export:
-      Name: !Sub "${AWS::StackName}-ssh-password"
-    Value: !GetAtt LambdaRunnerSshPassword.RandomString
-
-  SshUsername:
-    Condition: IfUsingSshd
-    Description: 'The username for SSH access. Help: https://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#sshusername'
-    Export:
-      Name: !Sub "${AWS::StackName}-ssh-username"
-    Value: root
 
   SubnetPrivate1:
     Description: 'The ID of private subnet 1. Help: https://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#subnetprivate1'
