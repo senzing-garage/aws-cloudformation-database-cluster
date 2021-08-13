@@ -170,7 +170,6 @@ Mappings:
       Username: senzing
     Run:
       ApiServer: Yes
-      Jupyter: No
       Redoer: Yes
       Sshd: Yes
       SshdMax: No
@@ -210,10 +209,6 @@ Conditions:
 
   IfRunApiServer: !Equals
     - !FindInMap [Constants, Run, ApiServer]
-    - Yes
-
-  IfRunJupyter: !Equals
-    - !FindInMap [Constants, Run, Jupyter]
     - Yes
 
   IfRunRedoer: !Equals
@@ -264,7 +259,6 @@ Conditions:
 
   IfUsingWeb: !Or
     - !Condition IfRunApiServer
-    - !Condition IfRunJupyter
     - !Condition IfRunSwagger
 
 # -----------------------------------------------------------------------------
@@ -477,25 +471,6 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-iam-role-install-senzing"
-    Type: AWS::IAM::Role
-
-
-  IamRoleJupyter:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          -
-            Action:
-              - sts:AssumeRole
-            Effect: Allow
-            Principal:
-              Service:
-                - ecs-tasks.amazonaws.com
-        Version: '2012-10-17'
-      Description: !Sub "${AWS::StackName}-iam-role-jupyter"
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-iam-role-jupyter"
     Type: AWS::IAM::Role
 
 
@@ -736,7 +711,6 @@ Resources:
        - !Ref IamRoleInitPostgres
        - !Ref IamRoleInitSenzing
        - !Ref IamRoleInstallSenzing
-       - !Ref IamRoleJupyter
        - !Ref IamRoleLambda
        - !Ref IamRoleRedoer
        - !Ref IamRoleSshd
@@ -920,7 +894,6 @@ Resources:
       Roles:
        - !Ref IamRoleApiServer
        - !Ref IamRoleG2ConfigTool
-       - !Ref IamRoleJupyter
        - !Ref IamRoleLambda
        - !Ref IamRoleRedoer
        - !Ref IamRoleSshd
@@ -1200,15 +1173,6 @@ Resources:
             - VpcCidrs
             - vpc
             - cidr
-          Description: Senzing X-Term
-          FromPort: 5000
-          IpProtocol: tcp
-          ToPort: 5000
-        -
-          CidrIp: !FindInMap
-            - VpcCidrs
-            - vpc
-            - cidr
           Description: PostgreSQL
           FromPort: 5432
           IpProtocol: tcp
@@ -1227,28 +1191,10 @@ Resources:
             - VpcCidrs
             - vpc
             - cidr
-          Description: Senzing Web App
-          FromPort: 8251
-          IpProtocol: tcp
-          ToPort: 8251
-        -
-          CidrIp: !FindInMap
-            - VpcCidrs
-            - vpc
-            - cidr
           Description: Swagger UI
           FromPort: 8080
           IpProtocol: tcp
           ToPort: 8080
-        -
-          CidrIp: !FindInMap
-            - VpcCidrs
-            - vpc
-            - cidr
-          Description: Senzing Jupyter notebooks
-          FromPort: 8888
-          IpProtocol: tcp
-          ToPort: 8888
         -
           CidrIp: !FindInMap
             - VpcCidrs
@@ -1360,18 +1306,6 @@ Resources:
       GroupId: !GetAtt Ec2SecurityGroupLoadBalancerPublic.GroupId
       IpProtocol: tcp
       ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
-
-
-  Ec2SecurityGroupIngressJupyter:
-    Condition: IfRunJupyter
-    Properties:
-      Description: Allow Health Check on Container 8888 from ALB
-      FromPort: 8888
-      GroupId: !GetAtt Ec2SecurityGroupLoadBalancerPublic.GroupId
-      IpProtocol: tcp
-      SourceSecurityGroupId: !GetAtt Ec2SecurityGroupLoadBalancerPublic.GroupId
-      ToPort: 8888
     Type: AWS::EC2::SecurityGroupIngress
 
 
@@ -2846,43 +2780,6 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
 
 
-  TargetGroupJupyter:
-    Condition: IfRunJupyter
-    DependsOn:
-     - LoadBalancerPublic
-    Properties:
-      HealthCheckIntervalSeconds: 80
-      HealthCheckPath: '/'
-      HealthCheckProtocol: HTTP
-      HealthCheckTimeoutSeconds: 50
-      HealthyThresholdCount: 2
-      Matcher:
-        HttpCode: 200-299
-      Name: !Sub "${AWS::StackName}-tg-jupyter"
-      Port: 8888
-      Protocol: HTTP
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-target-group-jupyter"
-      TargetGroupAttributes:
-      -
-        Key: deregistration_delay.timeout_seconds
-        Value: '60'
-      -
-        Key: stickiness.enabled
-        Value: 'true'
-      -
-        Key: stickiness.type
-        Value: lb_cookie
-      -
-        Key: stickiness.lb_cookie.duration_seconds
-        Value: '86400'
-      TargetType: ip
-      UnhealthyThresholdCount: 5
-      VpcId: !Ref Ec2Vpc
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-
-
   TargetGroupSwagger:
     Condition: IfRunSwagger
     DependsOn:
@@ -2971,33 +2868,6 @@ Resources:
             - "/api"
       ListenerArn: !Ref ListenerPort443
       Priority: 2
-    Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
-
-
-  ListenerRuleJupyter:
-    Condition: IfRunJupyter
-    Properties:
-      Actions:
-        - AuthenticateCognitoConfig:
-            OnUnauthenticatedRequest: authenticate
-            Scope: openid
-            UserPoolArn: !GetAtt 'UserPool.Arn'
-            UserPoolClientId: !Ref UserPoolClient
-            UserPoolDomain: !Ref UserPoolDomain
-          Order: 1
-          Type: authenticate-cognito
-        -
-          Type: "forward"
-          TargetGroupArn: !Ref TargetGroupJupyter
-          Order: 2
-      Conditions:
-        -
-          Field: "path-pattern"
-          Values:
-            - "/jupyter/*"
-            - "/jupyter"
-      ListenerArn: !Ref ListenerPort443
-      Priority: 3
     Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
 
 
@@ -3337,12 +3207,6 @@ Resources:
             - '-m'
             - '777'
             - '-p'
-            - '/efs/var/jupyter'
-            - '&&'
-            - 'mkdir'
-            - '-m'
-            - '777'
-            - '-p'
             - '/efs/var/shared'
           Essential: true
           Image: public.ecr.aws/senzing/busybox
@@ -3673,95 +3537,6 @@ Resources:
             FilesystemId:
               Ref: EfsFileSystem
             RootDirectory: /g2
-    Type: AWS::ECS::TaskDefinition
-
-
-  EcsTaskDefinitionJupyter:
-    Condition: IfRunJupyter
-    Properties:
-      ContainerDefinitions:
-        -
-          Command:
-            - 'start.sh'
-            - 'jupyter'
-            - 'notebook'
-            - "--NotebookApp.token=''"
-          Environment:
-            -
-              Name: SENZING_ENGINE_CONFIGURATION_JSON
-              Value: !GetAtt SsmParameterSenzingEngineConfigurationJson.Value
-          Essential: true
-          Image: public.ecr.aws/senzing/jupyter:1.3.0
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref LogsLogGroupMain
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: service
-          MountPoints:
-            -
-              SourceVolume: senzing-data-version-dir
-              ContainerPath: /opt/senzing/data
-              ReadOnly: true
-            -
-              SourceVolume: senzing-etc-dir
-              ContainerPath: /etc/opt/senzing
-              ReadOnly: true
-            -
-              SourceVolume: senzing-g2-dir
-              ContainerPath: /opt/senzing/g2
-              ReadOnly: true
-            -
-              SourceVolume: senzing-var-dir
-              ContainerPath: /notebooks/shared
-              ReadOnly: false
-          Name: jupyter
-          PortMappings:
-            - ContainerPort: 8888
-              HostPort: 8888
-              Protocol: tcp
-          Privileged: false
-          ReadonlyRootFilesystem: false
-      Cpu: '2048'
-      ExecutionRoleArn: !GetAtt IamRoleJupyter.Arn
-      Family: !Sub "${AWS::StackName}-task-definition-jupyter"
-      Memory: '12288'
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - FARGATE
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-ecs-task-definition-jupyter"
-      TaskRoleArn: !GetAtt IamRoleJupyter.Arn
-      Volumes:
-        -
-          Name: senzing-data-version-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /data/2.0.0
-        -
-          Name: senzing-etc-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /etc
-        -
-          Name: senzing-g2-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /g2
-        -
-          Name: senzing-var-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /var/jupyter
     Type: AWS::ECS::TaskDefinition
 
 
@@ -4426,40 +4201,6 @@ Resources:
     Type: AWS::ECS::Service
 
 
-  EcsServiceJupyter:
-    Condition: IfRunJupyter
-    DependsOn:
-     - LambdaRunnerInitSenzing
-     - ListenerPort443
-     - ListenerRuleJupyter
-    Properties:
-      Cluster: !Ref EcsCluster
-      DesiredCount: 1
-      EnableECSManagedTags: true
-      LaunchType: FARGATE
-      LoadBalancers:
-        -
-          ContainerName: jupyter
-          ContainerPort: 8888
-          TargetGroupArn: !Ref TargetGroupJupyter
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          SecurityGroups:
-            - !Ref Ec2SecurityGroupLoadBalancerPublic
-          Subnets:
-            - !Ref Ec2SubnetPrivate1
-            - !Ref Ec2SubnetPrivate2
-      PlatformVersion: 1.4.0
-      PropagateTags: TASK_DEFINITION
-      ServiceName: jupyter
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-ecs-service-jupyter"
-      TaskDefinition: !Ref EcsTaskDefinitionJupyter
-    Type: AWS::ECS::Service
-
-
   EcsServiceRedoerLoader:
     Condition: IfRunRedoer
     DependsOn:
@@ -4933,13 +4674,6 @@ Outputs:
     Condition: IfUsingApiServer
     Description: "URL for API Server's heartbeat. Help: https://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#urlapiserverheartbeat"
     Value: !Sub "https://${LoadBalancerPublic.DNSName}/api/heartbeat/"
-
-  UrlJupyter:
-    Condition: IfRunJupyter
-    Description: 'URL for Jupyter Notebooks. Help: https://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#urljupyter'
-    Export:
-      Name: !Sub "${AWS::StackName}-url-jupyter"
-    Value: !Sub "https://${LoadBalancerPublic.DNSName}/jupyter/"
 
   UrlSwagger:
     Condition: IfRunSwagger
