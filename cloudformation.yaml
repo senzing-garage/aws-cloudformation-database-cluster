@@ -177,7 +177,6 @@ Mappings:
       StreamLoader: Yes
       Swagger: Yes
       VpcFlowLogs: No
-      Xterm: Yes
     Senzing:
       Version: senzingapi-2.7.0-21153
     Stack:
@@ -245,10 +244,6 @@ Conditions:
     - !FindInMap [Constants, Run, VpcFlowLogs]
     - Yes
 
-  IfRunXterm: !Equals
-    - !FindInMap [Constants, Run, Xterm]
-    - Yes
-
 # -- Compound "if" conditions --------------------------------------------
 
   IfUsingApiServer: !Or
@@ -271,7 +266,6 @@ Conditions:
     - !Condition IfRunApiServer
     - !Condition IfRunJupyter
     - !Condition IfRunSwagger
-    - !Condition IfRunXterm
 
 # -----------------------------------------------------------------------------
 # Resources
@@ -625,25 +619,6 @@ Resources:
     Type: AWS::IAM::Role
 
 
-  IamRoleXterm:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          -
-            Action:
-              - sts:AssumeRole
-            Effect: Allow
-            Principal:
-              Service:
-                - ecs-tasks.amazonaws.com
-                - route53.amazonaws.com
-        Version: '2012-10-17'
-      Description: !Sub "${AWS::StackName}-iam-role-xterm"
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-iam-role-xterm"
-    Type: AWS::IAM::Role
-
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-policy.html
 # AWS Console: https://console.aws.amazon.com/iam/home?#/roles > Search for {stack} > {role} > inline policy
 
@@ -662,7 +637,6 @@ Resources:
       Roles:
        - !Ref IamRoleLambda
        - !Ref IamRoleSwagger
-       - !Ref IamRoleXterm
     Type: AWS::IAM::Policy
 
 
@@ -699,7 +673,6 @@ Resources:
       Roles:
        - !Ref IamRoleLambda
        - !Ref IamRoleSwagger
-       - !Ref IamRoleXterm
     Type: AWS::IAM::Policy
 
 
@@ -770,7 +743,6 @@ Resources:
        - !Ref IamRoleStreamLoader
        - !Ref IamRoleStreamProducer
        - !Ref IamRoleSwagger
-       - !Ref IamRoleXterm
     Type: AWS::IAM::Policy
 
 
@@ -827,7 +799,6 @@ Resources:
       Roles:
        - !Ref IamRoleLambda
        - !Ref IamRoleSwagger
-       - !Ref IamRoleXterm
     Type: AWS::IAM::Policy
 
 
@@ -955,7 +926,6 @@ Resources:
        - !Ref IamRoleSshd
        - !Ref IamRoleStreamLoader
        - !Ref IamRoleSwagger
-       - !Ref IamRoleXterm
     Type: AWS::IAM::Policy
 
 # -- Logging ------------------------------------------------------------------
@@ -1428,17 +1398,6 @@ Resources:
       ToPort: 8080
     Type: AWS::EC2::SecurityGroupIngress
 
-
-  Ec2SecurityGroupIngressXterm:
-    Condition: IfRunXterm
-    Properties:
-      Description: Allow Health Check on Container 5000 from ALB
-      FromPort: 5000
-      GroupId: !GetAtt Ec2SecurityGroupLoadBalancerPublic.GroupId
-      IpProtocol: tcp
-      SourceSecurityGroupId: !GetAtt Ec2SecurityGroupLoadBalancerPublic.GroupId
-      ToPort: 5000
-    Type: AWS::EC2::SecurityGroupIngress
 
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-internetgateway.html
 # AWS Console: https://console.aws.amazon.com/vpc/home?#igws > Search for {stack}
@@ -2951,42 +2910,6 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
 
 
-  TargetGroupXterm:
-    Condition: IfRunXterm
-    DependsOn:
-     - LoadBalancerPublic
-    Properties:
-      HealthCheckIntervalSeconds: 80
-      HealthCheckPath: '/xterm/'
-      HealthCheckProtocol: HTTP
-      HealthCheckTimeoutSeconds: 50
-      HealthyThresholdCount: 2
-      Matcher:
-        HttpCode: 200-299
-      Name: !Sub "${AWS::StackName}-tg-xterm"
-      Port: 5000
-      Protocol: HTTP
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-target-group-xterm"
-      TargetGroupAttributes:
-      -
-        Key: deregistration_delay.timeout_seconds
-        Value: '60'
-      -
-        Key: stickiness.enabled
-        Value: 'true'
-      -
-        Key: stickiness.type
-        Value: lb_cookie
-      -
-        Key: stickiness.lb_cookie.duration_seconds
-        Value: '86400'
-      TargetType: ip
-      UnhealthyThresholdCount: 5
-      VpcId: !Ref Ec2Vpc
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-listener.html
 # AWS Console: https://console.aws.amazon.com/ec2/v2/home?#LoadBalancers: > {name} > "Listeners" tab
 
@@ -3105,32 +3028,6 @@ Resources:
     Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
 
 
-  ListenerRuleXterm:
-    Condition: IfRunXterm
-    Properties:
-      Actions:
-        - AuthenticateCognitoConfig:
-            OnUnauthenticatedRequest: authenticate
-            Scope: openid
-            UserPoolArn: !GetAtt 'UserPool.Arn'
-            UserPoolClientId: !Ref UserPoolClient
-            UserPoolDomain: !Ref UserPoolDomain
-          Order: 1
-          Type: authenticate-cognito
-        -
-          Order: 2
-          TargetGroupArn: !Ref TargetGroupXterm
-          Type: "forward"
-      Conditions:
-        -
-          Field: "path-pattern"
-          Values:
-            - "/xterm/*"
-            - "/xterm"
-      ListenerArn: !Ref ListenerPort443
-      Priority: 3
-    Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
-
 # -- UserPool -----------------------------------------------------------------
 
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cognito-userpool.html
@@ -3159,22 +3056,11 @@ Resources:
               <p>
                   <b>Links:</b>
                   <ol>
-                    <li>
-                        <b>Senzing Entity Search web app: </b> <a href="https://${Host}/app">https://${Host}/app</a>
-                        <br />
-                        (For more details see the <a href="https://github.com/Senzing/entity-search-web-app">GitHub repository</a>)
-                    </li>
                     <br />
                     <li>
                         <b>Senzing API Server: </b> <a href="https://${Host}/api/heartbeat">https://${Host}/api/heartbeat</a>
                         <br />
                         (For more details see the <a href="https://github.com/Senzing/senzing-api-server">GitHub repository</a>)
-                    </li>
-                    <br />
-                    <li>
-                        <b>Senzing XTerm: </b> <a href="https://${Host}/xterm">https://${Host}/xterm</a>
-                        <br />
-                        (For more details see the <a href="https://github.com/Senzing/docker-xterm">GitHub repository</a>)
                     </li>
                     <br />
                     <li>
@@ -4496,95 +4382,6 @@ Resources:
     Type: AWS::ECS::TaskDefinition
 
 
-  EcsTaskDefinitionXterm:
-    Condition: IfRunXterm
-    Properties:
-      ContainerDefinitions:
-        -
-          Environment:
-            -
-              Name: SENZING_BASE_URL_XTERM
-              Value: /xterm/
-            -
-              Name: SENZING_SKIP_DATABASE_PERFORMANCE_TEST
-              Value: 'true'
-          Essential: true
-          Image: public.ecr.aws/senzing/xterm:1.1.0
-          LinuxParameters:
-            Capabilities:
-              Add:
-                - SYS_PTRACE
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref LogsLogGroupMain
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: service
-          MountPoints:
-            -
-              SourceVolume: senzing-data-version-dir
-              ContainerPath: /opt/senzing/data
-              ReadOnly: true
-            -
-              SourceVolume: senzing-etc-dir
-              ContainerPath: /etc/opt/senzing
-              ReadOnly: true
-            -
-              SourceVolume: senzing-g2-dir
-              ContainerPath: /opt/senzing/g2
-              ReadOnly: true
-            -
-              SourceVolume: senzing-var-dir
-              ContainerPath: /var/opt/senzing
-              ReadOnly: false
-          Name: xterm
-          PortMappings:
-            - ContainerPort: 5000
-              HostPort: 5000
-              Protocol: tcp
-          Privileged: false
-          ReadonlyRootFilesystem: false
-      Cpu: '2048'
-      ExecutionRoleArn: !GetAtt IamRoleXterm.Arn
-      Family: !Sub "${AWS::StackName}-task-definition-xterm"
-      Memory: '12288'
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - FARGATE
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-ecs-task-definition-xterm"
-      Volumes:
-        -
-          Name: senzing-data-version-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /data/2.0.0
-        -
-          Name: senzing-etc-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /etc
-        -
-          Name: senzing-g2-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /g2
-        -
-          Name: senzing-var-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /var
-    Type: AWS::ECS::TaskDefinition
-
 # -- EcsService ---------------------------------------------------------------
 
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html
@@ -4830,39 +4627,6 @@ Resources:
       TaskDefinition: !Ref EcsTaskDefinitionSwagger
     Type: AWS::ECS::Service
 
-
-  EcsServiceXterm:
-    Condition: IfRunXterm
-    DependsOn:
-     - LambdaRunnerInitSenzing
-     - ListenerPort443
-     - ListenerRuleXterm
-    Properties:
-      Cluster: !Ref EcsCluster
-      DesiredCount: 1
-      EnableECSManagedTags: true
-      LaunchType: FARGATE
-      LoadBalancers:
-        -
-          ContainerName: xterm
-          ContainerPort: 5000
-          TargetGroupArn: !Ref TargetGroupXterm
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          SecurityGroups:
-            - !Ref Ec2SecurityGroupLoadBalancerPublic
-          Subnets:
-            - !Ref Ec2SubnetPrivate1
-            - !Ref Ec2SubnetPrivate2
-      PlatformVersion: 1.4.0
-      PropagateTags: TASK_DEFINITION
-      ServiceName: xterm
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-ecs-service-xterm"
-      TaskDefinition: !Ref EcsTaskDefinitionXterm
-    Type: AWS::ECS::Service
 
 # -- AutoScaling --------------------------------------------------------------
 
@@ -5183,13 +4947,6 @@ Outputs:
     Export:
       Name: !Sub "${AWS::StackName}-url-swagger"
     Value: !Sub "https://${LoadBalancerPublic.DNSName}/swagger/"
-
-  UrlXterm:
-    Condition: IfRunXterm
-    Description: 'URL for Senzing XTerm. Help: https://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#urlxterm'
-    Export:
-      Name: !Sub "${AWS::StackName}-url-xterm"
-    Value: !Sub "https://${LoadBalancerPublic.DNSName}/xterm/"
 
   UserInitPassword:
     Condition: IfUsingWeb
