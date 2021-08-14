@@ -35,11 +35,6 @@ Metadata:
           default: Security
         Parameters:
           - CognitoAdminEmail
-      -
-        Label:
-          default: 'Optional: Initial data load'
-        Parameters:
-          - RunStreamProducer
     ParameterLabels:
       AcceptEula:
         default: >-
@@ -48,8 +43,6 @@ Metadata:
           enter 'I_ACCEPT_THE_SENZING_EULA'.
       CognitoAdminEmail:
         default: 'Required: Email address for initial user.'
-      RunStreamProducer:
-        default: 'Optional: Would you like to have an initial set of data imported?'
       SecurityResponsibility:
         default: >-
           Required: A default deployment of this template is for public demonstration only.
@@ -83,15 +76,6 @@ Parameters:
     ConstraintDescription: Entering initial user email address is required to proceed
     Default: '_'
     Description: 'Help: https://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#cognitoadminemail'
-    Type: String
-
-
-  RunStreamProducer:
-    AllowedValues:
-      - 'No'
-      - 'Yes'
-    Default: 'Yes'
-    Description: 'Help: https://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#runstreamproducer'
     Type: String
 
 
@@ -158,18 +142,11 @@ Mappings:
       Name: G2
       Username: senzing
     Run:
-      StreamLoader: Yes
       VpcFlowLogs: No
     Senzing:
       Version: senzingapi-2.7.0-21153
     Stack:
       Name: database-cluster
-    StreamProducer:
-      DataSource: TEST
-      EntityType: GENERIC
-      InputUrl: https://s3.amazonaws.com/public-read-access/TestDataSets/SenzingTruthSet/truth-set.json
-      RecordMax: 0
-      RecordMin: 0
 
 
   VpcCidrs:
@@ -191,23 +168,9 @@ Mappings:
 
 Conditions:
 
-  IfRunStreamLoader: !Equals
-    - !FindInMap [Constants, Run, StreamLoader]
-    - Yes
-
-  IfRunStreamProducer: !Equals
-    - !Ref RunStreamProducer
-    - 'Yes'
-
   IfRunVpcFlowLogs: !Equals
     - !FindInMap [Constants, Run, VpcFlowLogs]
     - Yes
-
-# -- Compound "if" conditions --------------------------------------------
-
-  IfUsingQueues: !Or
-    - !Condition IfRunStreamLoader
-    - !Condition IfRunStreamProducer
 
 # -----------------------------------------------------------------------------
 # Resources
@@ -425,46 +388,6 @@ Resources:
     Type: AWS::IAM::Role
 
 
-  IamRoleStreamLoader:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          -
-            Action:
-              - sts:AssumeRole
-            Effect: Allow
-            Principal:
-              Service:
-                - ecs-tasks.amazonaws.com
-                - sqs.amazonaws.com
-        Version: '2012-10-17'
-      Description: !Sub "${AWS::StackName}-iam-role-stream-loader"
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-iam-role-stream-loader"
-    Type: AWS::IAM::Role
-
-
-  IamRoleStreamProducer:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          -
-            Action:
-              - sts:AssumeRole
-            Effect: Allow
-            Principal:
-              Service:
-                - ecs-tasks.amazonaws.com
-                - sqs.amazonaws.com
-        Version: '2012-10-17'
-      Description: !Sub "${AWS::StackName}-iam-role-stream-producer"
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-iam-role-stream-producer"
-    Type: AWS::IAM::Role
-
-
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-policy.html
 # AWS Console: https://console.aws.amazon.com/iam/home?#/roles > Search for {stack} > {role} > inline policy
 
@@ -579,8 +502,6 @@ Resources:
        - !Ref IamRoleInitSenzing
        - !Ref IamRoleInstallSenzing
        - !Ref IamRoleLambda
-       - !Ref IamRoleStreamLoader
-       - !Ref IamRoleStreamProducer
     Type: AWS::IAM::Policy
 
 
@@ -601,7 +522,6 @@ Resources:
        - !Ref IamRoleG2ConfigTool
        - !Ref IamRoleInitEfs
        - !Ref IamRoleLambda
-       - !Ref IamRoleStreamProducer
     Type: AWS::IAM::Policy
 
 
@@ -656,49 +576,6 @@ Resources:
     Type: AWS::IAM::Policy
 
 
-  IamPolicySqsConsumer:
-    Condition: IfUsingQueues
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-iam-policy-sqs-consumer"
-      PolicyDocument:
-        Statement:
-          -
-            Action:
-              - sqs:ReceiveMessage
-              - sqs:DeleteMessage
-              - sqs:GetQueueAttributes
-            Effect: Allow
-            Resource:
-              - !GetAtt SqsDeadLetter.Arn
-              - !GetAtt SqsInput.Arn
-              - !GetAtt SqsOutput.Arn
-        Version: '2012-10-17'
-      Roles:
-       - !Ref IamRoleStreamLoader
-    Type: AWS::IAM::Policy
-
-
-  IamPolicySqsProducer:
-    Condition: IfUsingQueues
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-iam-policy-sqs-producer"
-      PolicyDocument:
-        Statement:
-          -
-            Action:
-              - sqs:SendMessage
-            Effect: Allow
-            Resource:
-              - !GetAtt SqsDeadLetter.Arn
-              - !GetAtt SqsInput.Arn
-              - !GetAtt SqsOutput.Arn
-        Version: '2012-10-17'
-      Roles:
-       - !Ref IamRoleStreamLoader
-       - !Ref IamRoleStreamProducer
-    Type: AWS::IAM::Policy
-
-
   IamPolicyTaskRunner:
     Properties:
       PolicyName: !Sub "${AWS::StackName}-iam-policy-task-runner"
@@ -715,7 +592,6 @@ Resources:
       Roles:
        - !Ref IamRoleG2ConfigTool
        - !Ref IamRoleLambda
-       - !Ref IamRoleStreamLoader
     Type: AWS::IAM::Policy
 
 # -- Logging ------------------------------------------------------------------
@@ -1287,65 +1163,6 @@ Resources:
         - !Ref Ec2SecurityGroupInternal
     Type: AWS::RDS::DBCluster
 
-# -- Queue --------------------------------------------------------------------
-
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-sqs-queues.html
-# AWS Console: https://console.aws.amazon.com/sqs/v2/home > Search on {stack}
-
-  SqsInput:
-    Condition: IfUsingQueues
-    Properties:
-      DelaySeconds: 0
-      KmsMasterKeyId: alias/aws/sqs
-      MaximumMessageSize: 262144
-      MessageRetentionPeriod: 1209600
-      QueueName: !Sub "${AWS::StackName}-sqs-input"
-      ReceiveMessageWaitTimeSeconds: 0
-      RedrivePolicy:
-        deadLetterTargetArn:
-          Fn::GetAtt:
-            - SqsDeadLetter
-            - Arn
-        maxReceiveCount: 100
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-sqs-input"
-      VisibilityTimeout: 300
-    Type: AWS::SQS::Queue
-
-
-  SqsDeadLetter:
-    Condition: IfUsingQueues
-    Properties:
-      DelaySeconds: 0
-      KmsMasterKeyId: alias/aws/sqs
-      MaximumMessageSize: 262144
-      MessageRetentionPeriod: 1209600
-      QueueName: !Sub "${AWS::StackName}-sqs-dead-letter"
-      ReceiveMessageWaitTimeSeconds: 0
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-sqs-queue-dead"
-      VisibilityTimeout: 30
-    Type: AWS::SQS::Queue
-
-
-  SqsOutput:
-    Condition: IfUsingQueues
-    Properties:
-      DelaySeconds: 0
-      KmsMasterKeyId: alias/aws/sqs
-      MaximumMessageSize: 262144
-      MessageRetentionPeriod: 1209600
-      QueueName: !Sub "${AWS::StackName}-sqs-output"
-      ReceiveMessageWaitTimeSeconds: 0
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-sqs-output"
-      VisibilityTimeout: 300
-    Type: AWS::SQS::Queue
-
-
 
 # -- ECS Cluster --------------------------------------------------------------
 
@@ -1754,37 +1571,6 @@ Resources:
     Type: Custom::LambdaRunnerDbPassword
 
 
-  LambdaRunnerG2ConfigTool:
-    Condition: IfRunStreamProducer
-    DependsOn:
-     - LambdaRunnerInitSenzing
-    Properties:
-      ClusterId: !Ref EcsCluster
-      RunTaskParameters:
-        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ecs.html#ECS.Client.run_task
-        cluster: !Ref EcsCluster
-        count: 1
-        launchType: FARGATE
-        networkConfiguration:
-          awsvpcConfiguration:
-            assignPublicIp: DISABLED
-            securityGroups:
-              - !Ref Ec2SecurityGroupLambdaRunner
-            subnets:
-              - !Ref Ec2SubnetPrivate1
-              - !Ref Ec2SubnetPrivate2
-        platformVersion: 1.4.0
-        tags:
-          - key: Name
-            value: !Sub "${AWS::StackName}-lambda-runner-g2configtool-run-task-parameters"
-        taskDefinition: !Ref EcsTaskDefinitionG2ConfigTool
-      ServiceToken: !GetAtt LambdaFunctionRunTaskAndWait.Arn
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-lambda-runner-g2configtool"
-    Type: Custom::LambdaRunnerG2ConfigTool
-
-
   LambdaRunnerInitEfs:
     DependsOn:
      - LambdaRunnerWaitForEfs
@@ -2041,38 +1827,6 @@ Resources:
     Type: Custom::LambdaRunnerStackNameAsLower
 
 
-  LambdaRunnerStreamProducer:
-    Condition: IfRunStreamProducer
-    DependsOn:
-     - LambdaRunnerG2ConfigTool
-     - LambdaRunnerWaitForEfs
-     - SqsInput
-    Properties:
-      ClusterId: !Ref EcsCluster
-      RunTaskParameters:
-        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ecs.html#ECS.Client.run_task
-        cluster: !Ref EcsCluster
-        count: 1
-        launchType: FARGATE
-        networkConfiguration:
-          awsvpcConfiguration:
-            assignPublicIp: DISABLED
-            securityGroups:
-              - !Ref Ec2SecurityGroupLambdaRunner
-            subnets:
-              - !Ref Ec2SubnetPrivate1
-              - !Ref Ec2SubnetPrivate2
-        platformVersion: 1.4.0
-        tags:
-          - key: Name
-            value: !Sub "${AWS::StackName}-lambda-runner-stream-producer-run-task-parameters"
-        taskDefinition: !Ref EcsTaskDefinitionStreamProducer
-      ServiceToken: !GetAtt LambdaFunctionRunTask.Arn
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-lambda-runner-stream-producer"
-    Type: Custom::LambdaRunnerStreamProducer
-
 
   LambdaRunnerWaitForEfs:
     Properties:
@@ -2091,73 +1845,6 @@ Resources:
 
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html
 # AWS Console: https://console.aws.amazon.com/ecs/home?#/taskDefinitions > Search for {stack}
-
-
-  EcsTaskDefinitionG2ConfigTool:
-    Condition: IfRunStreamProducer
-    Properties:
-      ContainerDefinitions:
-        -
-          Command:
-            - -f
-            - /etc/opt/senzing/G2Config.gtc
-          Essential: true
-          Image: public.ecr.aws/senzing/g2configtool:1.4.2
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref LogsLogGroupMain
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: job
-          MountPoints:
-            -
-              SourceVolume: senzing-data-version-dir
-              ContainerPath: /opt/senzing/data
-              ReadOnly: true
-            -
-              SourceVolume: senzing-etc-dir
-              ContainerPath: /etc/opt/senzing
-              ReadOnly: true
-            -
-              SourceVolume: senzing-g2-dir
-              ContainerPath: /opt/senzing/g2
-              ReadOnly: true
-          Name: g2configtool
-          Privileged: false
-          ReadonlyRootFilesystem: false
-      Cpu: '2048'
-      ExecutionRoleArn: !GetAtt IamRoleG2ConfigTool.Arn
-      Family: !Sub "${AWS::StackName}-task-definition-g2configtool"
-      Memory: '12288'
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - FARGATE
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-ecs-task-definition-g2configtool"
-      Volumes:
-        -
-          Name: senzing-data-version-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /data/2.0.0
-        -
-          Name: senzing-etc-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /etc
-        -
-          Name: senzing-g2-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /g2
-    Type: AWS::ECS::TaskDefinition
 
 
   EcsTaskDefinitionInitEfs:
@@ -2512,277 +2199,6 @@ Resources:
     Type: AWS::ECS::TaskDefinition
 
 
-
-
-  EcsTaskDefinitionStreamLoader:
-    Condition: IfRunStreamLoader
-    Properties:
-      ContainerDefinitions:
-        -
-          Environment:
-            -
-              Name: SENZING_ENGINE_CONFIGURATION_JSON
-              Value: !GetAtt SsmParameterSenzingEngineConfigurationJson.Value
-            -
-              Name: SENZING_DELAY_IN_SECONDS
-              Value: '900'
-            -
-              Name: SENZING_DELAY_RANDOMIZED
-              Value: 'true'
-            -
-              Name: SENZING_GOVERNOR_CHECK_TIME_INTERVAL_IN_SECONDS
-              Value: '600'
-            -
-              Name: SENZING_LOG_LEVEL
-              Value: info
-            -
-              Name: SENZING_MONITORING_PERIOD_IN_SECONDS
-              Value: '600'
-            -
-              Name: SENZING_PRIME_ENGINE
-              Value: 'true'
-            -
-              Name: SENZING_SKIP_DATABASE_PERFORMANCE_TEST
-              Value: 'true'
-            -
-              Name: SENZING_SQS_INFO_QUEUE_URL
-              Value: !Sub "https://sqs.${AWS::Region}.amazonaws.com/${AWS::AccountId}/${SqsOutput.QueueName}"
-            -
-              Name: SENZING_SQS_QUEUE_URL
-              Value: !Sub "https://sqs.${AWS::Region}.amazonaws.com/${AWS::AccountId}/${SqsInput.QueueName}"
-            -
-              Name: SENZING_SUBCOMMAND
-              Value: sqs-withinfo
-            -
-              Name: SENZING_THREADS_PER_PROCESS
-              Value: '8'
-          Essential: true
-          Image: public.ecr.aws/senzing/stream-loader:1.7.6
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref LogsLogGroupMain
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: service
-          MountPoints:
-            -
-              SourceVolume: senzing-data-version-dir
-              ContainerPath: /opt/senzing/data
-              ReadOnly: true
-            -
-              SourceVolume: senzing-etc-dir
-              ContainerPath: /etc/opt/senzing
-              ReadOnly: true
-            -
-              SourceVolume: senzing-g2-dir
-              ContainerPath: /opt/senzing/g2
-              ReadOnly: true
-            -
-              SourceVolume: senzing-var-dir
-              ContainerPath: /var/opt/senzing
-              ReadOnly: false
-          Name: stream-loader
-          Privileged: false
-          ReadonlyRootFilesystem: false
-      Cpu: '2048'
-      ExecutionRoleArn: !GetAtt IamRoleStreamLoader.Arn
-      Family: !Sub "${AWS::StackName}-task-definition-stream-loader"
-      Memory: '12288'
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - FARGATE
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-ecs-task-definition-stream-loader"
-      TaskRoleArn: !GetAtt IamRoleStreamLoader.Arn
-      Volumes:
-        -
-          Name: senzing-data-version-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /data/2.0.0
-        -
-          Name: senzing-etc-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /etc
-        -
-          Name: senzing-g2-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /g2
-        -
-          Name: senzing-var-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /var
-    Type: AWS::ECS::TaskDefinition
-
-
-  EcsTaskDefinitionStreamProducer:
-    Condition: IfRunStreamProducer
-    Properties:
-      ContainerDefinitions:
-        -
-          Environment:
-            -
-              Name: SENZING_DEFAULT_DATA_SOURCE
-              Value: !FindInMap [Constants, StreamProducer, DataSource]
-            -
-              Name: SENZING_DEFAULT_ENTITY_TYPE
-              Value: !FindInMap [Constants, StreamProducer, EntityType]
-            -
-              Name: SENZING_INPUT_URL
-              Value: !FindInMap [Constants, StreamProducer, InputUrl]
-            -
-              Name: SENZING_MONITORING_PERIOD_IN_SECONDS
-              Value: '60'
-            -
-              Name: SENZING_READ_QUEUE_MAXSIZE
-              Value: '200'
-            -
-              Name: SENZING_RECORD_MAX
-              Value: !FindInMap [Constants, StreamProducer, RecordMax]
-            -
-              Name: SENZING_RECORD_MIN
-              Value: !FindInMap [Constants, StreamProducer, RecordMin]
-            -
-              Name: SENZING_RECORD_MONITOR
-              Value: '100000'
-            -
-              Name: SENZING_SQS_QUEUE_URL
-              Value: !Sub "https://sqs.${AWS::Region}.amazonaws.com/${AWS::AccountId}/${SqsInput.QueueName}"
-            -
-              Name: SENZING_SUBCOMMAND
-              Value: json-to-sqs
-            -
-              Name: SENZING_THREADS_PER_PRINT
-              Value: '30'
-          Essential: true
-          Image: public.ecr.aws/senzing/stream-producer:1.4.0
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref LogsLogGroupMain
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: job
-          MountPoints:
-            -
-              SourceVolume: senzing-var-dir
-              ContainerPath: /var/opt/senzing
-              ReadOnly: false
-          Name: producer
-          Privileged: false
-          ReadonlyRootFilesystem: false
-      Cpu: '1024'
-      ExecutionRoleArn: !GetAtt IamRoleStreamProducer.Arn
-      Family: !Sub "${AWS::StackName}-task-definition-stream-producer"
-      Memory: '8192'
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - FARGATE
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-ecs-task-definition-stream-producer"
-      TaskRoleArn: !GetAtt IamRoleStreamProducer.Arn
-      Volumes:
-        -
-          Name: senzing-var-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /var
-    Type: AWS::ECS::TaskDefinition
-
-
-
-
-# -- EcsService ---------------------------------------------------------------
-
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html
-# AWS Console: https://console.aws.amazon.com/ecs/home?#/clusters > {stack}-cluster > "Services" tab
-
-
-
-  EcsServiceStreamLoader:
-    Condition: IfRunStreamLoader
-    DependsOn:
-     - LambdaRunnerInitSenzing
-    Properties:
-      Cluster: !Ref EcsCluster
-      DesiredCount: 8
-      EnableECSManagedTags: true
-      LaunchType: FARGATE
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          SecurityGroups:
-            - !Ref Ec2SecurityGroupInternal
-          Subnets:
-            - !Ref Ec2SubnetPrivate1
-            - !Ref Ec2SubnetPrivate2
-      PlatformVersion: 1.4.0
-      PropagateTags: TASK_DEFINITION
-      ServiceName: stream-loader
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-ecs-service-stream-loader"
-      TaskDefinition: !Ref EcsTaskDefinitionStreamLoader
-    Type: AWS::ECS::Service
-
-
-
-
-# -- AutoScaling --------------------------------------------------------------
-
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-applicationautoscaling-scalabletarget.html
-# AWS Console: https://console.aws.amazon.com/ecs/home?#/clusters > {stack}-cluster > {Service Name} > "Auto Scaling" tab
-
-
-  ApplicationAutoScalingScalableTargetStreamLoader:
-    Condition: IfRunStreamLoader
-    Properties:
-      MaxCapacity: 200
-      MinCapacity: 1
-      ResourceId: !Sub "service/${EcsCluster}/${EcsServiceStreamLoader.Name}"
-      RoleARN: !Sub "arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService"
-      ScalableDimension: ecs:service:DesiredCount
-      ServiceNamespace: ecs
-      SuspendedState:
-        DynamicScalingInSuspended: false
-        DynamicScalingOutSuspended: false
-        ScheduledScalingSuspended: false
-    Type: AWS::ApplicationAutoScaling::ScalableTarget
-
-
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-applicationautoscaling-scalingpolicy.html
-# AWS Console: https://console.aws.amazon.com/ecs/home?#/clusters > {stack}-cluster > {Service Name} > "Auto Scaling" tab
-
-
-  ApplicationAutoScalingScalingPolicyStreamLoader:
-    Condition: IfRunStreamLoader
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-scaling-policy-stream-loader"
-      PolicyType: TargetTrackingScaling
-      ScalingTargetId: !Ref ApplicationAutoScalingScalableTargetStreamLoader
-      TargetTrackingScalingPolicyConfiguration:
-        PredefinedMetricSpecification:
-          PredefinedMetricType: ECSServiceAverageCPUUtilization
-        ScaleInCooldown: 1200
-        ScaleOutCooldown: 300
-        TargetValue: 30
-    Type: AWS::ApplicationAutoScaling::ScalingPolicy
-
-
 # -----------------------------------------------------------------------------
 # Outputs
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/outputs-section-structure.html
@@ -2875,27 +2291,6 @@ Outputs:
     Export:
       Name: !Sub "${AWS::StackName}-ec2-VpcId-cidrblock"
     Value: !GetAtt Ec2Vpc.CidrBlock
-
-  QueueDeadLetter:
-    Condition: IfUsingQueues
-    Description: 'URL of the dead-letter queue. Help: https://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#queuedeadletter'
-    Export:
-      Name: !Sub "${AWS::StackName}-sqs-deadletter"
-    Value: !Ref SqsDeadLetter
-
-  QueueInput:
-    Condition: IfUsingQueues
-    Description: 'URL of the queue of records to be ingested into Senzing. Help: https://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#queueinput'
-    Export:
-      Name: !Sub "${AWS::StackName}-sqs-input"
-    Value: !Ref SqsInput
-
-  QueueOutput:
-    Condition: IfUsingQueues
-    Description: 'URL of the queue with info records. Help: https://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#queueoutput'
-    Export:
-      Name: !Sub "${AWS::StackName}-sqs-output"
-    Value: !Ref SqsOutput
 
   SenzingVersion:
     Description: 'The Senzing Engine version installed. Help: https://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#senzingversion'
