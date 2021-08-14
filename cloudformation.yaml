@@ -24,17 +24,7 @@ Metadata:
           default: Security responsibility
         Parameters:
           - SecurityResponsibility
-      -
-        Label:
-          default: Senzing installation
-        Parameters:
-          - AcceptEula
     ParameterLabels:
-      AcceptEula:
-        default: >-
-          Required: If you accept the Senzing End User License Agreement at
-          https://senzing.com/end-user-license-agreement,
-          enter 'I_ACCEPT_THE_SENZING_EULA'.
       SecurityResponsibility:
         default: >-
           Required: A default deployment of this template is for public demonstration only.
@@ -51,14 +41,6 @@ Parameters:
 
 # AWS Console: https://console.aws.amazon.com/cloudformation/home?#/stacks > {stack} > Parameters
 
-  AcceptEula:
-    AllowedPattern: '.+|^I_ACCEPT_THE_SENZING_EULA$'
-    ConstraintDescription: AcceptEula parameter must be 'I_ACCEPT_THE_SENZING_EULA'
-    Default: '_'
-    Description: 'Help: https://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#accepteula'
-    Type: String
-
-
   SecurityResponsibility:
     AllowedPattern: '.+|^I AGREE$'
     ConstraintDescription: SecurityResponsibility parameter must be 'I AGREE'
@@ -73,19 +55,6 @@ Parameters:
 # -----------------------------------------------------------------------------
 
 Rules:
-
-  ConfirmEula:
-    Assertions:
-      - Assert: !Not
-          - !Equals
-            - !Ref AcceptEula
-            - ''
-        AssertDescription: 'EULA needs to be accepted.  Enter "I_ACCEPT_THE_SENZING_EULA"'
-      - Assert: !Equals
-          - !Ref AcceptEula
-          - I_ACCEPT_THE_SENZING_EULA
-        AssertDescription: 'EULA acceptance incorrect.  Enter "I_ACCEPT_THE_SENZING_EULA"'
-
 
   ConfirmSecurityResponsibility:
     Assertions:
@@ -105,14 +74,8 @@ Mappings:
     Database:
       Name: G2
       Username: senzing
-    Run:
-      VpcFlowLogs: No
-    Senzing:
-      Version: senzingapi-2.7.0-21153
     Stack:
       Name: database-cluster
-
-
   VpcCidrs:
     vpc:
       cidr: 10.0.0.0/16
@@ -126,71 +89,11 @@ Mappings:
       cidr: 10.0.4.0/24
 
 # -----------------------------------------------------------------------------
-# Conditions
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/conditions-section-structure.html
-# -----------------------------------------------------------------------------
-
-Conditions:
-
-  IfRunVpcFlowLogs: !Equals
-    - !FindInMap [Constants, Run, VpcFlowLogs]
-    - Yes
-
-# -----------------------------------------------------------------------------
 # Resources
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
 # -----------------------------------------------------------------------------
 
 Resources:
-
-# -- Ssm -----------------------------------------------------------------
-
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ssm-parameter.html
-# AWS Console: https://console.aws.amazon.com/systems-manager/parameters > Search for {stack}
-
-  SsmParameterSenzingEngineConfigurationJson:
-    Properties:
-      Name: !Sub "${AWS::StackName}-ssm-parameter-senzing-engine-configuration-json"
-      Type: String
-      Value: !Sub
-        - >-
-          {
-              "PIPELINE": {
-                  "CONFIGPATH": "/etc/opt/senzing",
-                  "RESOURCEPATH": "/opt/senzing/g2/resources",
-                  "SUPPORTPATH": "/opt/senzing/data"
-              },
-              "SQL": {
-                  "BACKEND": "HYBRID",
-                  "CONNECTION":"postgresql://${DatabaseUsername}:${DatabasePassword}@${DatabaseHostCore}:${DatabasePortCore}:${DatabaseName}"
-              },
-              "C1": {
-                  "CLUSTER_SIZE": "1",
-                  "DB_1": "postgresql://${DatabaseUsername}:${DatabasePassword}@${DatabaseHostRes}:${DatabasePortRes}:${DatabaseName}"
-              },
-              "C2": {
-                  "CLUSTER_SIZE": "1",
-                  "DB_1": "postgresql://${DatabaseUsername}:${DatabasePassword}@${DatabaseHostLibfeat}:${DatabasePortLibfeat}:${DatabaseName}"
-              },
-              "HYBRID": {
-                  "LIB_FEAT": "C2",
-                  "LIB_FEAT_HKEY": "C2",
-                  "RES_FEAT": "C1",
-                  "RES_FEAT_EKEY": "C1",
-                  "RES_FEAT_LKEY": "C1",
-                  "RES_FEAT_STAT": "C1"
-              }
-          }
-        - DatabaseHostLibfeat: !GetAtt RdsDbClusterLibfeat.Endpoint.Address
-          DatabaseHostCore: !GetAtt RdsDbClusterCore.Endpoint.Address
-          DatabaseHostRes: !GetAtt RdsDbClusterRes.Endpoint.Address
-          DatabaseName: !FindInMap [Constants, Database, Name]
-          DatabasePassword: !GetAtt LambdaRunnerDbPassword.RandomString
-          DatabasePortLibfeat: !GetAtt RdsDbClusterLibfeat.Endpoint.Port
-          DatabasePortCore: !GetAtt RdsDbClusterCore.Endpoint.Port
-          DatabasePortRes: !GetAtt RdsDbClusterRes.Endpoint.Port
-          DatabaseUsername: !FindInMap [Constants, Database, Username]
-    Type: AWS::SSM::Parameter
 
 # -- Iam -----------------------------------------------------------------
 
@@ -216,45 +119,6 @@ Resources:
     Type: AWS::IAM::Role
 
 
-  IamRoleFlowLog:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          -
-            Action:
-              - sts:AssumeRole
-            Effect: Allow
-            Principal:
-              Service:
-                - vpc-flow-logs.amazonaws.com
-        Version: '2012-10-17'
-      Description: !Sub "${AWS::StackName}-iam-role-flow-log"
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-iam-role-flow-log"
-    Type: AWS::IAM::Role
-
-
-  IamRoleG2ConfigTool:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          -
-            Action:
-              - sts:AssumeRole
-            Effect: Allow
-            Principal:
-              Service:
-                - ecs-tasks.amazonaws.com
-        Version: '2012-10-17'
-      Description: !Sub "${AWS::StackName}-iam-role-g2configtool"
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-iam-role-g2configtool"
-    Type: AWS::IAM::Role
-
-
-
   IamRoleInitPostgres:
     Properties:
       AssumeRolePolicyDocument:
@@ -272,7 +136,6 @@ Resources:
         - Key: Name
           Value: !Sub "${AWS::StackName}-iam-role-init-postgres"
     Type: AWS::IAM::Role
-
 
 
   IamRoleLambda:
@@ -334,27 +197,6 @@ Resources:
     Type: AWS::IAM::Policy
 
 
-  IamPolicyEc2FlowLogs:
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-iam-policy-logging-create-group"
-      PolicyDocument:
-        Statement:
-          -
-            Action:
-              - logs:CreateLogGroup
-              - logs:CreateLogStream
-              - logs:DescribeLogGroups
-              - logs:DescribeLogStreams
-              - logs:PutLogEvents
-            Effect: Allow
-            Resource:
-              - '*'
-        Version: '2012-10-17'
-      Roles:
-       - !Ref IamRoleFlowLog
-    Type: AWS::IAM::Policy
-
-
   IamPolicyLoggingCreateStream:
     Properties:
       PolicyName: !Sub "${AWS::StackName}-iam-policy-logging-create-stream"
@@ -369,8 +211,6 @@ Resources:
               - '*'
         Version: '2012-10-17'
       Roles:
-       - !Ref IamRoleFlowLog
-       - !Ref IamRoleG2ConfigTool
        - !Ref IamRoleInitPostgres
        - !Ref IamRoleLambda
     Type: AWS::IAM::Policy
@@ -389,8 +229,6 @@ Resources:
               - '*'
         Version: '2012-10-17'
       Roles:
-       - !Ref IamRoleFlowLog
-       - !Ref IamRoleG2ConfigTool
        - !Ref IamRoleLambda
     Type: AWS::IAM::Policy
 
@@ -460,7 +298,6 @@ Resources:
               - '*'
         Version: '2012-10-17'
       Roles:
-       - !Ref IamRoleG2ConfigTool
        - !Ref IamRoleLambda
     Type: AWS::IAM::Policy
 
@@ -535,22 +372,6 @@ Resources:
         - "/senzing/${StackName}/${AWS::StackName}"
         - StackName: !FindInMap [Constants, Stack, Name]
     Type: AWS::Logs::LogGroup
-
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-flowlog.html
-# https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-cwl.html
-
-  Ec2FlowLog:
-    Condition: IfRunVpcFlowLogs
-    Properties:
-      DeliverLogsPermissionArn: !GetAtt IamRoleFlowLog.Arn
-      LogGroupName: !Ref LogsLogGroupMain
-      ResourceId: !Ref Ec2Vpc
-      ResourceType: VPC
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-ec2-flow-log"
-      TrafficType: ALL
-    Type: AWS::EC2::FlowLog
 
 # -- Cloud, subnets, routing --------------------------------------------------
 
@@ -1053,75 +874,6 @@ Resources:
         - Key: Name
           Value: !Sub "${AWS::StackName}-lambda-random-string"
       Timeout: 600
-    Type: AWS::Lambda::Function
-
-
-  LambdaFunctionRunTask:
-    DependsOn:
-     - Ec2SubnetRouteTableAssociationPrivate1
-     - Ec2SubnetRouteTableAssociationPrivate2
-    Properties:
-      Code:
-        ZipFile: |
-          #!/usr/bin/env python3
-
-          import boto3
-          import cfnresponse
-          import datetime
-          import json
-          import logging
-          import traceback
-          from json import JSONEncoder
-
-          logger = logging.getLogger()
-          logger.setLevel(logging.INFO)
-
-          class DateTimeEncoder(JSONEncoder):
-              def default(self, obj):
-                  if isinstance(obj, (datetime.date, datetime.datetime)):
-                      return obj.isoformat()
-
-          def handler(event, context):
-              result = cfnresponse.SUCCESS
-              response = {}
-              try:
-                  logger.info("Event: {0}".format(json.dumps(event)))
-                  if event['RequestType'] in ['Create', 'Update']:
-                      properties = event.get('ResourceProperties', {})
-                      run_task_parameters = properties.get('RunTaskParameters', {})
-
-                      # Change strings to integers.
-
-                      numbers = [
-                          "count",
-                      ]
-                      for number in numbers:
-                          if number in run_task_parameters:
-                              run_task_parameters[number] = int(run_task_parameters[number])
-
-                      # Make AWS ECS request.
-
-                      ecs = boto3.client('ecs')
-                      response = ecs.run_task(**run_task_parameters)
-
-                  logger.info("Response: {0}".format(json.dumps(response, cls=DateTimeEncoder)))
-
-              except Exception as e:
-                  logger.error(e)
-                  traceback.print_exc()
-                  result = cfnresponse.FAILED
-              finally:
-                  cfnresponse.send(event, context, result, {})
-
-      Description: Runs an ECS task.
-      FunctionName: !Sub "${AWS::StackName}-lambda-run-task"
-      Handler: index.handler
-      Role: !GetAtt IamRoleLambda.Arn
-      Runtime: python3.8
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-lambda-run-task"
-      Timeout: 30
     Type: AWS::Lambda::Function
 
 
@@ -1742,12 +1494,6 @@ Outputs:
     Export:
       Name: !Sub "${AWS::StackName}-ec2-VpcId-cidrblock"
     Value: !GetAtt Ec2Vpc.CidrBlock
-
-  SenzingVersion:
-    Description: 'The Senzing Engine version installed. Help: https://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#senzingversion'
-    Export:
-      Name: !Sub "${AWS::StackName}-senzing-version"
-    Value: !FindInMap [Constants, Senzing, Version]
 
   SubnetPrivate1:
     Description: 'The ID of private subnet 1. Help: https://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#subnetprivate1'
