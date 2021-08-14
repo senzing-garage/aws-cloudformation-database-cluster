@@ -29,19 +29,12 @@ Metadata:
           default: Senzing installation
         Parameters:
           - AcceptEula
-      -
-        Label:
-          default: Security
-        Parameters:
-          - CognitoAdminEmail
     ParameterLabels:
       AcceptEula:
         default: >-
           Required: If you accept the Senzing End User License Agreement at
           https://senzing.com/end-user-license-agreement,
           enter 'I_ACCEPT_THE_SENZING_EULA'.
-      CognitoAdminEmail:
-        default: 'Required: Email address for initial user.'
       SecurityResponsibility:
         default: >-
           Required: A default deployment of this template is for public demonstration only.
@@ -66,14 +59,6 @@ Parameters:
     Type: String
 
 
-  CognitoAdminEmail:
-    AllowedPattern: '.+|^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$'
-    ConstraintDescription: Entering initial user email address is required to proceed
-    Default: '_'
-    Description: 'Help: https://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#cognitoadminemail'
-    Type: String
-
-
   SecurityResponsibility:
     AllowedPattern: '.+|^I AGREE$'
     ConstraintDescription: SecurityResponsibility parameter must be 'I AGREE'
@@ -88,15 +73,6 @@ Parameters:
 # -----------------------------------------------------------------------------
 
 Rules:
-
-  ConfirmCognitoAdminEmail:
-    Assertions:
-      - Assert: !Not
-          - !Equals
-            - !Ref CognitoAdminEmail
-            - '_'
-        AssertDescription: 'Entering initial user email address is required to proceed'
-
 
   ConfirmEula:
     Assertions:
@@ -358,23 +334,6 @@ Resources:
     Type: AWS::IAM::Policy
 
 
-  IamPolicyCognito:
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-iam-policy-cognito"
-      PolicyDocument:
-        Statement:
-          -
-            Action:
-              - cognito-idp:AdminCreateUser
-            Effect: Allow
-            Resource:
-              - '*'
-        Version: '2012-10-17'
-      Roles:
-       - !Ref IamRoleLambda
-    Type: AWS::IAM::Policy
-
-
   IamPolicyEc2FlowLogs:
     Properties:
       PolicyName: !Sub "${AWS::StackName}-iam-policy-logging-create-group"
@@ -394,7 +353,6 @@ Resources:
       Roles:
        - !Ref IamRoleFlowLog
     Type: AWS::IAM::Policy
-
 
 
   IamPolicyLoggingCreateStream:
