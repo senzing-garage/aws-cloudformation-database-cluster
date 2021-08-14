@@ -29,7 +29,6 @@ Metadata:
           default: Senzing installation
         Parameters:
           - AcceptEula
-          - SenzingLicenseAsBase64
       -
         Label:
           default: Security
@@ -49,10 +48,6 @@ Metadata:
           Before using authentic PII, ensure the security of your deployment.
           The security of this deployment is your responsibility.
           To acknowledge your understanding and acceptance of the foregoing, type “I AGREE”.
-      SenzingLicenseAsBase64:
-        default: >-
-          Required if inserting more than 100K records.
-          Senzing license as base64 encoded string.
 
 # -----------------------------------------------------------------------------
 # Parameters
@@ -86,13 +81,6 @@ Parameters:
     Description: 'Help: https://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#securityresponsibility'
     Type: String
 
-
-  SenzingLicenseAsBase64:
-#   AllowedPattern: ' ^$|[^-A-Za-z0-9+\/=\s]|=[^=]|={3,}$'
-    ConstraintDescription: 'Must contain only Base64 characters. see https://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#senzinglicenseasbase64'
-    Default: ' '
-    Description: 'Help: https://hub.senzing.com/aws-cloudformation-ecs-poc-simple/#senzinglicenseasbase64'
-    Type: String
 
 # -----------------------------------------------------------------------------
 # Rules
@@ -290,24 +278,6 @@ Resources:
     Type: AWS::IAM::Role
 
 
-  IamRoleInitEfs:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          -
-            Action:
-              - sts:AssumeRole
-            Effect: Allow
-            Principal:
-              Service:
-                - ecs-tasks.amazonaws.com
-        Version: '2012-10-17'
-      Description: !Sub "${AWS::StackName}-iam-role-init-efs"
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-iam-role-init-efs"
-    Type: AWS::IAM::Role
-
 
   IamRoleInitPostgres:
     Properties:
@@ -327,43 +297,6 @@ Resources:
           Value: !Sub "${AWS::StackName}-iam-role-init-postgres"
     Type: AWS::IAM::Role
 
-
-  IamRoleInitSenzing:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          -
-            Action:
-              - sts:AssumeRole
-            Effect: Allow
-            Principal:
-              Service:
-                - ecs-tasks.amazonaws.com
-        Version: '2012-10-17'
-      Description: !Sub "${AWS::StackName}-iam-role-init-senzing"
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-iam-role-init-senzing"
-    Type: AWS::IAM::Role
-
-
-  IamRoleInstallSenzing:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          -
-            Action:
-              - sts:AssumeRole
-            Effect: Allow
-            Principal:
-              Service:
-                - ecs-tasks.amazonaws.com
-        Version: '2012-10-17'
-      Description: !Sub "${AWS::StackName}-iam-role-install-senzing"
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-iam-role-install-senzing"
-    Type: AWS::IAM::Role
 
 
   IamRoleLambda:
@@ -463,23 +396,6 @@ Resources:
     Type: AWS::IAM::Policy
 
 
-  IamPolicyEfs:
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-iam-policy-lambda"
-      PolicyDocument:
-        Statement:
-          -
-            Action:
-              - elasticfilesystem:DescribeMountTargets
-              - elasticfilesystem:DescribeFileSystems
-            Effect: Allow
-            Resource:
-              - !GetAtt EfsFileSystem.Arn
-        Version: '2012-10-17'
-      Roles:
-       - !Ref IamRoleLambda
-    Type: AWS::IAM::Policy
-
 
   IamPolicyLoggingCreateStream:
     Properties:
@@ -497,10 +413,7 @@ Resources:
       Roles:
        - !Ref IamRoleFlowLog
        - !Ref IamRoleG2ConfigTool
-       - !Ref IamRoleInitEfs
        - !Ref IamRoleInitPostgres
-       - !Ref IamRoleInitSenzing
-       - !Ref IamRoleInstallSenzing
        - !Ref IamRoleLambda
     Type: AWS::IAM::Policy
 
@@ -520,7 +433,6 @@ Resources:
       Roles:
        - !Ref IamRoleFlowLog
        - !Ref IamRoleG2ConfigTool
-       - !Ref IamRoleInitEfs
        - !Ref IamRoleLambda
     Type: AWS::IAM::Policy
 
@@ -656,12 +568,6 @@ Resources:
   LogsLogGroupLambdaStringToLower:
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-lambda-string-to-lower"
-    Type: AWS::Logs::LogGroup
-
-
-  LogsLogGroupLambdaWaitForEfs:
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-lambda-wait-for-efs"
     Type: AWS::Logs::LogGroup
 
 
@@ -968,44 +874,6 @@ Resources:
       SubnetId: !Ref Ec2SubnetPublic2
     Type: AWS::EC2::SubnetRouteTableAssociation
 
-# -- Elastic File System ------------------------------------------------------
-
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-efs-filesystem.html
-# AWS Console: https://console.aws.amazon.com/efs/home?#/filesystems > Search for {stack}
-
-  EfsFileSystem:
-    Properties:
-      Encrypted: true
-      FileSystemTags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-efs-filesystem"
-      PerformanceMode: generalPurpose
-      ThroughputMode: bursting
-    Type: AWS::EFS::FileSystem
-
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-efs-mounttarget.html
-# AWS Console: https://console.aws.amazon.com/efs/home?#/filesystems > {name} > "Network" tab
-
-  EfsMountTarget1:
-    Properties:
-      FileSystemId:
-        Ref: EfsFileSystem
-      SecurityGroups:
-        - Ref: Ec2SecurityGroupInternal
-      SubnetId:
-        Ref: Ec2SubnetPrivate1
-    Type: AWS::EFS::MountTarget
-
-
-  EfsMountTarget2:
-    Properties:
-      FileSystemId:
-        Ref: EfsFileSystem
-      SecurityGroups:
-        - Ref: Ec2SecurityGroupInternal
-      SubnetId:
-        Ref: Ec2SubnetPrivate2
-    Type: AWS::EFS::MountTarget
 
 # -- Database -----------------------------------------------------------------
 
@@ -1479,80 +1347,6 @@ Resources:
     Type: AWS::Lambda::Function
 
 
-  LambdaFunctionWaitForEfs:
-    DependsOn:
-     - Ec2SubnetRouteTableAssociationPrivate1
-     - Ec2SubnetRouteTableAssociationPrivate2
-    Properties:
-      Code:
-        ZipFile: |
-          #!/usr/bin/env python3
-
-          import boto3
-          import cfnresponse
-          import json
-          import logging
-          import time
-          import traceback
-
-          logger = logging.getLogger()
-          logger.setLevel(logging.INFO)
-
-          def handler(event, context):
-              result = cfnresponse.SUCCESS
-              try:
-                  logger.info("Event: {0}".format(json.dumps(event)))
-                  if event['RequestType'] in ['Create', 'Update']:
-                      properties = event.get('ResourceProperties', {})
-                      describe_parameters = properties.get('DescribeParameters', {})
-                      efs = boto3.client('efs')
-                      done = False
-                      while not done:
-                          time.sleep(10)
-                          response = efs.describe_mount_targets(**describe_parameters)
-                          # test mount targets
-                          logger.info("describe_mount_targets response = {0}".format(json.dumps(response)))
-                          mount_targets = response.get("MountTargets",[{}])
-                          done_count = 0
-                          for mount_target in mount_targets:
-                            life_cycle_state = mount_target.get("LifeCycleState")
-                            logger.info("mount_target life_cycle_state = {0}".format(life_cycle_state))
-                            if 'available' == life_cycle_state:
-                              done_count += 1
-
-                          # test file systems
-                          response = efs.describe_file_systems(**describe_parameters)
-                          logger.info(f"describe_file_systems response = {response}")
-                          file_systems = response.get("FileSystems",[{}])
-                          for file_system in file_systems:
-                            life_cycle_state = file_system.get("LifeCycleState")
-                            logger.info("file_system life_cycle_state = {0}".format(life_cycle_state))
-                            if 'available' == life_cycle_state:
-                              done_count += 1
-
-                          logger.info(f"Done? count: {done_count} of {len(mount_targets) + len(file_systems)}")
-                          if done_count == ( len(mount_targets) + len(file_systems) ):
-                              done = True
-                      logger.info("Done, mount targets and file systems available")
-                      #hack, wait for a few minutes for EFS to actually be available
-                      time.sleep(360)
-              except Exception as e:
-                  logger.error(e)
-                  traceback.print_exc()
-                  result = cfnresponse.FAILED
-              finally:
-                  cfnresponse.send(event, context, result, {})
-
-      Description: Waits until EFS MountTargets are available.
-      FunctionName: !Sub "${AWS::StackName}-lambda-wait-for-efs"
-      Handler: index.handler
-      Role: !GetAtt IamRoleLambda.Arn
-      Runtime: python3.8
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-lambda-wait-for-efs"
-      Timeout: 600
-    Type: AWS::Lambda::Function
 
 # -- Run Lambda jobs ----------------------------------------------------------
 
@@ -1570,65 +1364,6 @@ Resources:
           Value: !Sub "${AWS::StackName}-lambda-runner-db-password"
     Type: Custom::LambdaRunnerDbPassword
 
-
-  LambdaRunnerInitEfs:
-    DependsOn:
-     - LambdaRunnerWaitForEfs
-    Properties:
-      ClusterId: !Ref EcsCluster
-      RunTaskParameters:
-        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ecs.html#ECS.Client.run_task
-        cluster: !Ref EcsCluster
-        count: 1
-        launchType: FARGATE
-        networkConfiguration:
-          awsvpcConfiguration:
-            assignPublicIp: DISABLED
-            securityGroups:
-              - !Ref Ec2SecurityGroupLambdaRunner
-            subnets:
-              - !Ref Ec2SubnetPrivate1
-              - !Ref Ec2SubnetPrivate2
-        platformVersion: 1.4.0
-        tags:
-          - key: Name
-            value: !Sub "${AWS::StackName}-lambda-runner-init-efs-run-task-parameters"
-        taskDefinition: !Ref EcsTaskDefinitionInitEfs
-      ServiceToken: !GetAtt LambdaFunctionRunTaskAndWait.Arn
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-lambda-runner-init-efs"
-    Type: Custom::LambdaRunnerInitEfs
-
-
-  LambdaRunnerInstallSenzing:
-    DependsOn:
-     - LambdaRunnerInitEfs
-    Properties:
-      ClusterId: !Ref EcsCluster
-      RunTaskParameters:
-        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ecs.html#ECS.Client.run_task
-        cluster: !Ref EcsCluster
-        count: 1
-        launchType: FARGATE
-        networkConfiguration:
-          awsvpcConfiguration:
-            assignPublicIp: DISABLED
-            securityGroups:
-              - !Ref Ec2SecurityGroupLambdaRunner
-            subnets:
-              - !Ref Ec2SubnetPrivate1
-              - !Ref Ec2SubnetPrivate2
-        platformVersion: 1.4.0
-        tags:
-          - key: Name
-            value: !Sub "${AWS::StackName}-lambda-runner-install-senzing-run-task-parameters"
-        taskDefinition: !Ref EcsTaskDefinitionInstallSenzing
-      ServiceToken: !GetAtt LambdaFunctionRunTaskAndWait.Arn
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-lambda-runner-install-senzing"
-    Type: Custom::LambdaRunnerInstallSenzing
 
 
   LambdaRunnerInitPostgresConfiguration:
@@ -1751,39 +1486,6 @@ Resources:
     Type: Custom::LambdaRunnerInitPostgresRes
 
 
-  LambdaRunnerInitSenzing:
-    DependsOn:
-     - LambdaRunnerInstallSenzing
-     - LambdaRunnerInitPostgresCore
-     - LambdaRunnerInitPostgresLibfeat
-     - LambdaRunnerInitPostgresRes
-    Properties:
-      ClusterId: !Ref EcsCluster
-      RunTaskParameters:
-        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ecs.html#ECS.Client.run_task
-        cluster: !Ref EcsCluster
-        count: 1
-        launchType: FARGATE
-        networkConfiguration:
-          awsvpcConfiguration:
-            assignPublicIp: DISABLED
-            securityGroups:
-              - !Ref Ec2SecurityGroupLambdaRunner
-            subnets:
-              - !Ref Ec2SubnetPrivate1
-              - !Ref Ec2SubnetPrivate2
-        platformVersion: 1.4.0
-        tags:
-          - key: Name
-            value: !Sub "${AWS::StackName}-lambda-runner-init-senzing-run-task-parameters"
-        taskDefinition: !Ref EcsTaskDefinitionInitSenzing
-      ServiceToken: !GetAtt LambdaFunctionRunTaskAndWait.Arn
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-lambda-runner-init-senzing"
-    Type: Custom::LambdaRunnerInitSenzing
-
-
   LambdaRunnerSetPostgresCoreTimeoutAction:
     Properties:
       DBClusterIdentifier: !Ref RdsDbClusterCore
@@ -1826,82 +1528,11 @@ Resources:
           Value: !Sub "${AWS::StackName}-lambda-runner-stack-name-as-lower"
     Type: Custom::LambdaRunnerStackNameAsLower
 
-
-
-  LambdaRunnerWaitForEfs:
-    Properties:
-      ClusterId: !Ref EcsCluster
-      DescribeParameters:
-        # MountTargetId: !Ref EfsMountTarget1
-        FileSystemId: !Ref EfsFileSystem
-      ServiceToken: !GetAtt LambdaFunctionWaitForEfs.Arn
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-lambda-runner-wait-for-efs"
-    Type: Custom::LambdaRunnerWaitForEfs
-
-
 # -- EcsTaskDefinition --------------------------------------------------------
 
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html
 # AWS Console: https://console.aws.amazon.com/ecs/home?#/taskDefinitions > Search for {stack}
 
-
-  EcsTaskDefinitionInitEfs:
-    Properties:
-      ContainerDefinitions:
-        -
-          Command:
-            - 'mkdir'
-            - '/efs/g2'
-            - '&&'
-            - 'mkdir'
-            - '-p'
-            - '/efs/data/2.0.0'
-            - '&&'
-            - 'mkdir'
-            - '/efs/etc'
-            - '&&'
-            - 'mkdir'
-            - '-m'
-            - '777'
-            - '-p'
-            - '/efs/var/shared'
-          Essential: true
-          Image: public.ecr.aws/senzing/busybox
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref LogsLogGroupMain
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: job
-          MountPoints:
-            -
-              SourceVolume: senzing-efs-root
-              ContainerPath: /efs
-              ReadOnly: false
-          Name: efsinitcontainer
-          Privileged: false
-          ReadonlyRootFilesystem: false
-      Cpu: '512'
-      ExecutionRoleArn: !GetAtt IamRoleInitEfs.Arn
-      Family: !Sub "${AWS::StackName}-task-definition-init-efs"
-      Memory: '1024'
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - FARGATE
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-ecs-task-definition-init-efs"
-      Volumes:
-        -
-          Name: senzing-efs-root
-          EFSVolumeConfiguration:
-            AuthorizationConfig: {}
-            FilesystemId:
-              Ref: EfsFileSystem
-            RootDirectory: '/'
-    Type: AWS::ECS::TaskDefinition
 
 
   EcsTaskDefinitionInitPostgresConfiguration:
@@ -2059,144 +1690,6 @@ Resources:
           Value: !Sub "${AWS::StackName}-ecs-task-definition-init-postgres-res"
     Type: AWS::ECS::TaskDefinition
 
-
-  EcsTaskDefinitionInitSenzing:
-    Properties:
-      ContainerDefinitions:
-        -
-          Environment:
-            -
-              Name: SENZING_ENGINE_CONFIGURATION_JSON
-              Value: !GetAtt SsmParameterSenzingEngineConfigurationJson.Value
-            -
-              Name: SENZING_G2CONFIG_GTC
-              Value: |
-                addDataSource CUSTOMER
-                addDataSource WATCHLIST
-                save
-            -
-              Name: SENZING_LICENSE_BASE64_ENCODED
-              Value: !Sub "${SenzingLicenseAsBase64}"
-          Essential: true
-          Image: public.ecr.aws/senzing/init-container:1.6.9
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref LogsLogGroupMain
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: job
-          MountPoints:
-            -
-              SourceVolume: senzing-data-version-dir
-              ContainerPath: /opt/senzing/data
-              ReadOnly: true
-            -
-              SourceVolume: senzing-etc-dir
-              ContainerPath: /etc/opt/senzing
-              ReadOnly: false
-            -
-              SourceVolume: senzing-g2-dir
-              ContainerPath: /opt/senzing/g2
-              ReadOnly: false
-          Name: initcontainer
-          Privileged: false
-          ReadonlyRootFilesystem: false
-          User: '0'
-      Cpu: '512'
-      ExecutionRoleArn: !GetAtt IamRoleInitSenzing.Arn
-      Family: !Sub "${AWS::StackName}-task-definition-init-senzing"
-      Memory: '4096'
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - FARGATE
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-ecs-task-definition-init-efs"
-      Volumes:
-        -
-          Name: senzing-data-version-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /data/2.0.0
-        -
-          Name: senzing-etc-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /etc
-        -
-          Name: senzing-g2-dir
-          EFSVolumeConfiguration:
-              AuthorizationConfig: {}
-              FilesystemId:
-                Ref: EfsFileSystem
-              RootDirectory: /g2
-    Type: AWS::ECS::TaskDefinition
-
-
-  EcsTaskDefinitionInstallSenzing:
-    Properties:
-      ContainerDefinitions:
-        -
-          Command:
-            - '-y'
-            - 'install'
-            - !FindInMap [Constants, Senzing, Version]
-          Environment:
-            -
-              Name: SENZING_ACCEPT_EULA
-              Value: !Ref AcceptEula
-          Essential: true
-          Image: public.ecr.aws/senzing/yum:1.1.4
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref LogsLogGroupMain
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: job
-          MountPoints:
-            -
-              SourceVolume: senzing-data-dir
-              ContainerPath: /opt/senzing/data
-              ReadOnly: false
-            -
-              SourceVolume: senzing-g2-dir
-              ContainerPath: /opt/senzing/g2
-              ReadOnly: false
-
-          Name: yum
-          Privileged: false
-          ReadonlyRootFilesystem: false
-          User: '0'
-      Cpu: '512'
-      ExecutionRoleArn: !GetAtt IamRoleInstallSenzing.Arn
-      Family: !Sub "${AWS::StackName}-task-definition-install-senzing"
-      Memory: '4096'
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - FARGATE
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-ecs-task-definition-install-senzing"
-      Volumes:
-        -
-          Name: senzing-data-dir
-          EFSVolumeConfiguration:
-            AuthorizationConfig: {}
-            FilesystemId:
-              Ref: EfsFileSystem
-            RootDirectory: /data
-        -
-          Name: senzing-g2-dir
-          EFSVolumeConfiguration:
-            AuthorizationConfig: {}
-            FilesystemId:
-              Ref: EfsFileSystem
-            RootDirectory: /g2
-    Type: AWS::ECS::TaskDefinition
 
 
 # -----------------------------------------------------------------------------
