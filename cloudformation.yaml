@@ -7,7 +7,7 @@ AWSTemplateFormatVersion: 2010-09-09
 #     aws cloudformation validate-template: https://awscli.amazonaws.com/v2/documentation/api/latest/reference/cloudformation/validate-template.html
 
 Description: >-
-  Senzing aws-cloudformation-database-cluster: 1.1.1
+  Senzing aws-cloudformation-database-cluster: 1.2.0
   For more information see https://github.com/Senzing/aws-cloudformation-database-cluster
 
 # -----------------------------------------------------------------------------
@@ -100,25 +100,6 @@ Resources:
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
 # AWS Console: https://console.aws.amazon.com/iam/home?#/roles > Search for {stack}
 
-  IamRoleDebug:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          -
-            Action:
-              - sts:AssumeRole
-            Effect: Allow
-            Principal:
-              Service:
-                - ecs-tasks.amazonaws.com
-        Version: '2012-10-17'
-      Description: !Sub "${AWS::StackName}-iam-role-debug"
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-iam-role-debug"
-    Type: AWS::IAM::Role
-
-
   IamRoleInitPostgres:
     Properties:
       AssumeRolePolicyDocument:
@@ -162,39 +143,6 @@ Resources:
 
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-policy.html
 # AWS Console: https://console.aws.amazon.com/iam/home?#/roles > Search for {stack} > {role} > inline policy
-
-  IamPolicyCertificateManager:
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-iam-policy-certificate-manager"
-      PolicyDocument:
-        Statement:
-          -
-            Action:
-              - acm:ListCertificates
-            Effect: Allow
-            Resource:
-              - '*'
-        Version: '2012-10-17'
-      Roles:
-       - !Ref IamRoleLambda
-    Type: AWS::IAM::Policy
-
-
-  IamPolicyCertificates:
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-iam-policy-certificates"
-      PolicyDocument:
-        Statement:
-          -
-            Action:
-              - iam:UploadServerCertificate
-            Effect: Allow
-            Resource:
-              - '*'
-        Version: '2012-10-17'
-      Roles:
-       - !Ref IamRoleLambda
-    Type: AWS::IAM::Policy
 
 
   IamPolicyLoggingCreateStream:
@@ -241,40 +189,6 @@ Resources:
           -
             Action:
               - rds:ModifyDBCluster
-            Effect: Allow
-            Resource:
-              - '*'
-        Version: '2012-10-17'
-      Roles:
-       - !Ref IamRoleLambda
-    Type: AWS::IAM::Policy
-
-
-  IamPolicyRoute53:
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-iam-policy-route53"
-      PolicyDocument:
-        Statement:
-          -
-            Action:
-              - route53:GetHostedZone
-            Effect: Allow
-            Resource:
-              - '*'
-        Version: '2012-10-17'
-      Roles:
-       - !Ref IamRoleLambda
-    Type: AWS::IAM::Policy
-
-
-  IamPolicyS3:
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-iam-policy-s3"
-      PolicyDocument:
-        Statement:
-          -
-            Action:
-              - s3:GetObject
             Effect: Allow
             Resource:
               - '*'
