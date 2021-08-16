@@ -415,46 +415,10 @@ Resources:
             - VpcCidrs
             - vpc
             - cidr
-          Description: HTTP
-          FromPort: 80
-          IpProtocol: tcp
-          ToPort: 80
-        -
-          CidrIp: !FindInMap
-            - VpcCidrs
-            - vpc
-            - cidr
-          Description: HTTPS
-          FromPort: 443
-          IpProtocol: tcp
-          ToPort: 443
-        -
-          CidrIp: !FindInMap
-            - VpcCidrs
-            - vpc
-            - cidr
-          Description: NFS
-          FromPort: 2049
-          IpProtocol: tcp
-          ToPort: 2049
-        -
-          CidrIp: !FindInMap
-            - VpcCidrs
-            - vpc
-            - cidr
           Description: PostgreSQL
           FromPort: 5432
           IpProtocol: tcp
           ToPort: 5432
-        -
-          CidrIp: !FindInMap
-            - VpcCidrs
-            - vpc
-            - cidr
-          Description: phpPgAdmin
-          FromPort: 9171
-          IpProtocol: tcp
-          ToPort: 9171
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-ec2-security-group-internal"
