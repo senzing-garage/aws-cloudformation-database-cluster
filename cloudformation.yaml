@@ -30,6 +30,8 @@ Metadata:
         Parameters:
           - SecurityResponsibility
     ParameterLabels:
+      MultipleDatabases:
+        default: 'Optional: Would you like to install into a single or multiple databases?'
       SecurityResponsibility:
         default: >-
           Required: A default deployment of this template is for public demonstration only.
