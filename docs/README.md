@@ -136,6 +136,7 @@ Technical information on AWS Cloudformation parameters can be seen at
 [Parameters](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html).
 
 ### MultipleDatabases
+
 1. **Synopsis:**
    Choose single database or Senzing database cluster.  For more information see:
    https://senzing.zendesk.com/hc/en-us/articles/360010599254-Scaling-Out-Your-Database-With-Clustering
@@ -144,7 +145,7 @@ Technical information on AWS Cloudformation parameters can be seen at
 1. **Allowed values:**
     1. "Multiple"
     2. "Single"
-2. **Default:** Multiple
+1. **Default:** Multiple
 
 ### SecurityResponsibility
 
@@ -159,6 +160,13 @@ Technical information on AWS Cloudformation parameters can be seen at
 1. **Default:** None
 
 ## Outputs
+
+### AccountID
+
+1. **Synopsis:**
+   The identifier of the AWS account used to create the cloudformation stack.
+1. **Details:**
+   FIXME:
 
 ### DatabaseHostCore
 
@@ -274,4 +282,20 @@ Technical information on AWS Cloudformation parameters can be seen at
    The second of two private subnets created.
 1. **Details:**
    See the subnet having a Name in the form `{StackName}-ec2-subnet-private-2` in the
+   [AWS Virtual Private Cloud console](https://console.aws.amazon.com/vpc/home?#subnets:).
+
+### SubnetPublic1
+
+1. **Synopsis:**
+   The first of two public subnets created.
+1. **Details:**
+   See the subnet having a Name in the form `{StackName}-ec2-subnet-public-1` in the
+   [AWS Virtual Private Cloud console](https://console.aws.amazon.com/vpc/home?#subnets:).
+
+### SubnetPublic2
+
+1. **Synopsis:**
+   The second of two public subnets created.
+1. **Details:**
+   See the subnet having a Name in the form `{StackName}-ec2-subnet-public-2` in the
    [AWS Virtual Private Cloud console](https://console.aws.amazon.com/vpc/home?#subnets:).
