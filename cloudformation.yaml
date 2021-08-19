@@ -90,6 +90,8 @@ Mappings:
     Database:
       Name: G2
       Username: senzing
+    Images:
+      PostgresClient: public.ecr.aws/senzing/postgresql-client:1.1.1
     Stack:
       Name: database-cluster
   VpcCidrs:
@@ -1279,7 +1281,7 @@ Resources:
               Name: SENZING_SQL_FILE
               Value: /app/insert-senzing-configuration.sql
           Essential: true
-          Image: public.ecr.aws/senzing/postgresql-client:1.1.1
+          Image: !FindInMap [Constants, Images, PostgresClient]
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -1326,7 +1328,7 @@ Resources:
               Name: SENZING_SQL_FILE
               Value: /opt/senzing/g2/resources/schema/g2core-schema-postgresql-create.sql
           Essential: true
-          Image: public.ecr.aws/senzing/postgresql-client:1.1.1
+          Image: !FindInMap [Constants, Images, PostgresClient]
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -1373,7 +1375,7 @@ Resources:
               Name: SENZING_SQL_FILE
               Value: /opt/senzing/g2/resources/schema/g2core-schema-postgresql-create.sql
           Essential: true
-          Image: public.ecr.aws/senzing/postgresql-client:1.1.1
+          Image: !FindInMap [Constants, Images, PostgresClient]
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -1420,7 +1422,7 @@ Resources:
               Name: SENZING_SQL_FILE
               Value: /opt/senzing/g2/resources/schema/g2core-schema-postgresql-create.sql
           Essential: true
-          Image: public.ecr.aws/senzing/postgresql-client:1.1.1
+          Image: !FindInMap [Constants, Images, PostgresClient]
           LogConfiguration:
             LogDriver: awslogs
             Options:
