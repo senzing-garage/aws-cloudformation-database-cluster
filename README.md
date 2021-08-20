@@ -2,14 +2,18 @@
 
 ## Synopsis
 
-The `aws-cloudformation-database-cluster` AWS Cloudformation template
-creates an AWS VPC and Aurora Postgres serverless database deployment.
+The
+`aws-cloudformation-database-cluster`
+AWS Cloudformation template creates an AWS VPC
+and Aurora Postgres serverless database deployment.
 The Cloudformation does not deploy Senzing.
 Rather, it deploys a database than can be used by other AWS Cloudformations
 which do deploy Senzing such as
 [aws-cloudformation-ecs-senzing-stack-basic](https://github.com/Senzing/aws-cloudformation-ecs-senzing-stack-basic).
 
 ## How to deploy without much thinking
+
+For more details, see [details of deployment](docs/README.md).
 
 1. :warning: **Warning:** This Cloudformation deployment will accrue AWS costs.
    With appropriate permissions, the
@@ -19,6 +23,9 @@ which do deploy Senzing such as
 1. At lower-right, click on "Next" button.
 1. In **Specify stack details**
     1. In **Parameters**
+        1. In **Senzing installation**
+            1. If speed is desired over lower cost, choose "Multiple".
+            1. If lower cost is desired over speed, choose "Single".
         1. In **Security responsibility**
             1. Understand the nature of the security in the deployment.
             1. Once understood, enter "I AGREE".
@@ -33,5 +40,4 @@ which do deploy Senzing such as
 ## Additional topics
 
 1. [Details of deployment](docs/README.md)
-1. [How to set AWS RDS force-scaling-capacity](https://github.com/Senzing/knowledge-base/blob/master/HOWTO/set-aws-rds-force-scaling-capacity.md)
 1. [How to migrate an AWS RDS database](https://github.com/Senzing/knowledge-base/blob/master/HOWTO/migrate-aws-rds-database.md)

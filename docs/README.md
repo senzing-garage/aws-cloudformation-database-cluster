@@ -2,7 +2,14 @@
 
 ## Synopsis
 
-`aws-cloudformation-database-cluster` deploys three Senzing database clusters into AWS using a Cloudformation template.
+The
+[aws-cloudformation-database-cluster](https://github.com/Senzing/aws-cloudformation-database-cluster)
+AWS Cloudformation template creates an AWS VPC
+and Aurora Postgres serverless database deployment.
+The Cloudformation does not deploy Senzing.
+Rather, it deploys a database than can be used by other AWS Cloudformations
+which do deploy Senzing such as
+[aws-cloudformation-ecs-senzing-stack-basic](https://github.com/Senzing/aws-cloudformation-ecs-senzing-stack-basic).
 
 ## Overview
 
@@ -11,9 +18,11 @@ The `aws-cloudformation-database-cluster` AWS Cloudformation template creates th
 1. AWS infrastructure
     1. VPC
     1. Subnets
+    1. IP address and NAT Gateway
     1. Internet Gateway
     1. Routes
     1. IAM Roles and Policies
+    1. Security Groups
     1. Logging
 1. AWS services
     1. AWS Relational Data Service (RDS) Aurora Postgres Serverless
@@ -74,6 +83,9 @@ describing where we can improve.   Now on with the show...
 1. At lower-right, click on "Next" button.
 1. In **Specify stack details**
     1. In **Parameters**
+        1. In **Senzing installation**
+            1. If speed is desired over lower cost, choose "Multiple".
+            1. If lower cost is desired over speed, choose "Single".
         1. In **Security responsibility**
             1. Understand the nature of the security in the deployment.
             1. Once understood, enter "I AGREE".
@@ -91,10 +103,11 @@ describing where we can improve.   Now on with the show...
    It is simply the database deployment to be used by subsequent Cloudformations.
 1. Example subsequent deployments:
     1. [aws-cloudformation-ecs-senzing-stack-basic](https://github.com/Senzing/aws-cloudformation-ecs-senzing-stack-basic)
+    1. [aws-cloudformation-ecs-senzing-stack-choices](https://github.com/Senzing/aws-cloudformation-ecs-senzing-stack-choices)
+    1. [aws-marketplace-evaluation](https://github.com/Senzing/aws-marketplace-evaluation)
 
 ## Additional topics
 
-1. [How to set AWS RDS force-scaling-capacity](https://github.com/Senzing/knowledge-base/blob/master/HOWTO/set-aws-rds-force-scaling-capacity.md)
 1. [How to migrate an AWS RDS database](https://github.com/Senzing/knowledge-base/blob/master/HOWTO/migrate-aws-rds-database.md)
 
 ### Review AWS Cloudformation
@@ -136,15 +149,19 @@ Technical information on AWS Cloudformation parameters can be seen at
 [Parameters](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html).
 
 ### MultipleDatabases
+
 1. **Synopsis:**
-   Choose single database or Senzing database cluster.  For more information see:
-   https://senzing.zendesk.com/hc/en-us/articles/360010599254-Scaling-Out-Your-Database-With-Clustering
+   Choose single database or Senzing database cluster.
+   For increased performance and/or high volume, choose "Multiple".
+   For lower cost, choose "Single".
+   For more information see:
+   <https://senzing.zendesk.com/hc/en-us/articles/360010599254-Scaling-Out-Your-Database-With-Clustering>
 1. **Required:** Yes
 1. **Type:** Choice
 1. **Allowed values:**
     1. "Multiple"
     2. "Single"
-2. **Default:** Multiple
+1. **Default:** Multiple
 
 ### SecurityResponsibility
 
@@ -160,35 +177,47 @@ Technical information on AWS Cloudformation parameters can be seen at
 
 ## Outputs
 
+### AccountID
+
+1. **Synopsis:**
+   The identifier of the AWS account used to create the cloudformation stack.
+1. **Details:**
+   This information will match the
+   [AWS Management Console](https://console.aws.amazon.com/console/home)
+   user dropdown "My Account" value.
+
 ### DatabaseHostCore
 
 1. **Synopsis:**
-   One of 3 Senzing database clusters that hold the Senzing Model.
+   One of 3 Senzing databases that hold the Senzing Model.
 1. **Details:**
    See the database cluster having a Name in the form `{StackName}-aurora-senzing-core-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
+   If a "Single" database was deployed, it will point to the single database host.
 
 ### DatabaseHostLibfeat
 
 1. **Synopsis:**
-   Two of 3 Senzing database clusters that hold the Senzing Model.
+   Two of 3 Senzing databases that hold the Senzing Model.
 1. **Details:**
    See the database cluster having a Name in the form `{StackName}-aurora-senzing-libfeat-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
+   If a "Single" database was deployed, it will point to the single database host.
 
 ### DatabaseHostRes
 
 1. **Synopsis:**
-   Three of 3 Senzing database clusters that hold the Senzing Model.
+   Three of 3 Senzing databases that hold the Senzing Model.
 1. **Details:**
    See the database cluster having a Name in the form `{StackName}-aurora-senzing-res-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
+   If a "Single" database was deployed, it will point to the single database host.
 
 ### DatabaseName
 
 1. **Synopsis:**
    The name of the database.
-   It is same name across all 3 database servers.
+   It is same name across all database servers.
 1. **Details:**
    Usually "G2".
 
@@ -204,6 +233,7 @@ Technical information on AWS Cloudformation parameters can be seen at
 1. **Details:**
    See the database cluster having a Name in the form `{StackName}-aurora-senzing-core-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
+   If a "Single" database was deployed, it will point to the single database port.
 
 ### DatabasePortLibfeat
 
@@ -212,6 +242,7 @@ Technical information on AWS Cloudformation parameters can be seen at
 1. **Details:**
    See the database cluster having a Name in the form `{StackName}-aurora-senzing-libfeat-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:)
+   If a "Single" database was deployed, it will point to the single database port.
 
 ### DatabasePortRes
 
@@ -220,11 +251,12 @@ Technical information on AWS Cloudformation parameters can be seen at
 1. **Details:**
    See the database cluster having a Name in the form `{StackName}-aurora-senzing-res-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
+   If a "Single" database was deployed, it will point to the single database port.
 
 ### DatabaseUsername
 
 1. **Synopsis:**
-   Username to access database in each of the three databases.
+   Username to access any of the databases.
 1. **Details:**
    More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home).
 
@@ -274,4 +306,20 @@ Technical information on AWS Cloudformation parameters can be seen at
    The second of two private subnets created.
 1. **Details:**
    See the subnet having a Name in the form `{StackName}-ec2-subnet-private-2` in the
+   [AWS Virtual Private Cloud console](https://console.aws.amazon.com/vpc/home?#subnets:).
+
+### SubnetPublic1
+
+1. **Synopsis:**
+   The first of two public subnets created.
+1. **Details:**
+   See the subnet having a Name in the form `{StackName}-ec2-subnet-public-1` in the
+   [AWS Virtual Private Cloud console](https://console.aws.amazon.com/vpc/home?#subnets:).
+
+### SubnetPublic2
+
+1. **Synopsis:**
+   The second of two public subnets created.
+1. **Details:**
+   See the subnet having a Name in the form `{StackName}-ec2-subnet-public-2` in the
    [AWS Virtual Private Cloud console](https://console.aws.amazon.com/vpc/home?#subnets:).
