@@ -2,14 +2,18 @@
 
 ## Synopsis
 
-The `aws-cloudformation-database-cluster` AWS Cloudformation template
-creates an AWS VPC and Aurora Postgres serverless database deployment.
+The
+aws-cloudformation-database-cluster`
+AWS Cloudformation template creates an AWS VPC
+and Aurora Postgres serverless database deployment.
 The Cloudformation does not deploy Senzing.
 Rather, it deploys a database than can be used by other AWS Cloudformations
 which do deploy Senzing such as
 [aws-cloudformation-ecs-senzing-stack-basic](https://github.com/Senzing/aws-cloudformation-ecs-senzing-stack-basic).
 
 ## How to deploy without much thinking
+
+For more details, see [details of deployment](docs/README.md).
 
 1. :warning: **Warning:** This Cloudformation deployment will accrue AWS costs.
    With appropriate permissions, the
