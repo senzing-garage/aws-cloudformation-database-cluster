@@ -2,10 +2,13 @@
 
 ## Synopsis
 
-`aws-cloudformation-database-cluster` deploys a Senzing database cluster
+[aws-cloudformation-database-cluster](https://github.com/Senzing/aws-cloudformation-database-cluster)
+deploys a Senzing database cluster
 into AWS using a Cloudformation template.
 The cluster may be configured for one or three databases.
-Once deployed, it has the Senzing schema defined and default Senzing configuration installed.
+Once deployed, it has the Senzing database schema defined,
+default Senzing configuration installed,
+and is ready for use by the Senzing Engine.
 
 ## Overview
 
@@ -79,6 +82,9 @@ describing where we can improve.   Now on with the show...
 1. At lower-right, click on "Next" button.
 1. In **Specify stack details**
     1. In **Parameters**
+        1. In **Senzing installation**
+            1. If speed is desired over lower cost, choose "Multiple".
+            1. If lower cost is desired over speed, choose "Single".
         1. In **Security responsibility**
             1. Understand the nature of the security in the deployment.
             1. Once understood, enter "I AGREE".
@@ -96,10 +102,11 @@ describing where we can improve.   Now on with the show...
    It is simply the database deployment to be used by subsequent Cloudformations.
 1. Example subsequent deployments:
     1. [aws-cloudformation-ecs-senzing-stack-basic](https://github.com/Senzing/aws-cloudformation-ecs-senzing-stack-basic)
+    1. [aws-cloudformation-ecs-senzing-stack-choices](https://github.com/Senzing/aws-cloudformation-ecs-senzing-stack-choices)
+    1. [aws-marketplace-evaluation](https://github.com/Senzing/aws-marketplace-evaluation)
 
 ## Additional topics
 
-1. [How to set AWS RDS force-scaling-capacity](https://github.com/Senzing/knowledge-base/blob/master/HOWTO/set-aws-rds-force-scaling-capacity.md)
 1. [How to migrate an AWS RDS database](https://github.com/Senzing/knowledge-base/blob/master/HOWTO/migrate-aws-rds-database.md)
 
 ### Review AWS Cloudformation
@@ -143,8 +150,11 @@ Technical information on AWS Cloudformation parameters can be seen at
 ### MultipleDatabases
 
 1. **Synopsis:**
-   Choose single database or Senzing database cluster.  For more information see:
-   https://senzing.zendesk.com/hc/en-us/articles/360010599254-Scaling-Out-Your-Database-With-Clustering
+   Choose single database or Senzing database cluster.
+   For increased performance and/or high volume, choose "Multiple".
+   For lower cost, choose "Single".
+   For more information see:
+   <https://senzing.zendesk.com/hc/en-us/articles/360010599254-Scaling-Out-Your-Database-With-Clustering>
 1. **Required:** Yes
 1. **Type:** Choice
 1. **Allowed values:**
@@ -171,7 +181,9 @@ Technical information on AWS Cloudformation parameters can be seen at
 1. **Synopsis:**
    The identifier of the AWS account used to create the cloudformation stack.
 1. **Details:**
-   FIXME:
+   This information will match the
+   [AWS Management Console](https://console.aws.amazon.com/console/home)
+   user dropdown "My Account" value.
 
 ### DatabaseHostCore
 
@@ -180,6 +192,7 @@ Technical information on AWS Cloudformation parameters can be seen at
 1. **Details:**
    See the database cluster having a Name in the form `{StackName}-aurora-senzing-core-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
+   If a "Single" database was deployed, it will point to the single database host.
 
 ### DatabaseHostLibfeat
 
@@ -188,6 +201,7 @@ Technical information on AWS Cloudformation parameters can be seen at
 1. **Details:**
    See the database cluster having a Name in the form `{StackName}-aurora-senzing-libfeat-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
+   If a "Single" database was deployed, it will point to the single database host.
 
 ### DatabaseHostRes
 
@@ -196,12 +210,13 @@ Technical information on AWS Cloudformation parameters can be seen at
 1. **Details:**
    See the database cluster having a Name in the form `{StackName}-aurora-senzing-res-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
+   If a "Single" database was deployed, it will point to the single database host.
 
 ### DatabaseName
 
 1. **Synopsis:**
    The name of the database.
-   It is same name across all 3 database servers.
+   It is same name across all database servers.
 1. **Details:**
    Usually "G2".
 
@@ -217,6 +232,7 @@ Technical information on AWS Cloudformation parameters can be seen at
 1. **Details:**
    See the database cluster having a Name in the form `{StackName}-aurora-senzing-core-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
+   If a "Single" database was deployed, it will point to the single database port.
 
 ### DatabasePortLibfeat
 
@@ -225,6 +241,7 @@ Technical information on AWS Cloudformation parameters can be seen at
 1. **Details:**
    See the database cluster having a Name in the form `{StackName}-aurora-senzing-libfeat-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:)
+   If a "Single" database was deployed, it will point to the single database port.
 
 ### DatabasePortRes
 
@@ -233,11 +250,12 @@ Technical information on AWS Cloudformation parameters can be seen at
 1. **Details:**
    See the database cluster having a Name in the form `{StackName}-aurora-senzing-res-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
+   If a "Single" database was deployed, it will point to the single database port.
 
 ### DatabaseUsername
 
 1. **Synopsis:**
-   Username to access database in each of the three databases.
+   Username to access any of the databases.
 1. **Details:**
    More information at [AWS RDS Console](https://console.aws.amazon.com/rds/home).
 
