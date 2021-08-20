@@ -2,7 +2,10 @@
 
 ## Synopsis
 
-`aws-cloudformation-database-cluster` deploys three Senzing database clusters into AWS using a Cloudformation template.
+`aws-cloudformation-database-cluster` deploys a Senzing database cluster
+into AWS using a Cloudformation template.
+The cluster may be configured for one or three databases.
+Once deployed, it has the Senzing schema defined and default Senzing configuration installed.
 
 ## Overview
 
@@ -11,9 +14,11 @@ The `aws-cloudformation-database-cluster` AWS Cloudformation template creates th
 1. AWS infrastructure
     1. VPC
     1. Subnets
+    1. IP address and NAT Gateway
     1. Internet Gateway
     1. Routes
     1. IAM Roles and Policies
+    1. Security Groups
     1. Logging
 1. AWS services
     1. AWS Relational Data Service (RDS) Aurora Postgres Serverless
