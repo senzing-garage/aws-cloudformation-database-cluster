@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: 2010-09-09
 
 # File format follows https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-anatomy.html
 # Tests:
-#     Lint: https://github.com/aws-cloudformation/cfn-python-lint
+#     Lint: https://github.com/aws-cloudformation/cfn-lint
 #     Nag: https://github.com/stelligent/cfn_nag
 #     aws cloudformation validate-template: https://awscli.amazonaws.com/v2/documentation/api/latest/reference/cloudformation/validate-template.html
 
@@ -53,7 +53,7 @@ Parameters:
       - 'Single'
       - 'Multiple'
     Default: 'Multiple'
-    Description: 'Help: Install as single or multiple databases?'
+    Description: 'Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#multipledatabases'
     Type: String
 
 
@@ -1456,13 +1456,13 @@ Outputs:
 # AWS Console: https://console.aws.amazon.com/cloudformation/home?#/stacks > {stack} > Outputs
 
   AccountID:
-    Description: 'The accountID Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#accountid'
+    Description: 'The AWS AccountID. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#accountid'
     Export:
       Name: !Sub "${AWS::StackName}-account-id"
     Value: !Sub "${AWS::AccountId}"
 
   DatabaseHostCore:
-    Description: 'The connection endpoint for the DB cluster. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasehostcore'
+    Description: 'Hostname of the Core database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasehostcore'
     Export:
       Name: !Sub "${AWS::StackName}-database-host-core"
     Value: !If
@@ -1471,7 +1471,7 @@ Outputs:
       - !GetAtt RdsDbClusterCore.Endpoint.Address
 
   DatabaseHostLibfeat:
-    Description: 'The connection endpoint for the DB cluster. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasehostlibfeat'
+    Description: 'Hostname of the Libfeat database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasehostlibfeat'
     Export:
       Name: !Sub "${AWS::StackName}-database-host-libfeat"
     Value: !If
@@ -1480,7 +1480,7 @@ Outputs:
       - !GetAtt RdsDbClusterLibfeat.Endpoint.Address
 
   DatabaseHostRes:
-    Description: 'The connection endpoint for the DB cluster. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasehostres'
+    Description: 'Hostname of the Res database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasehostres'
     Export:
       Name: !Sub "${AWS::StackName}-database-host-res"
     Value: !If
@@ -1495,13 +1495,13 @@ Outputs:
     Value: !FindInMap [Constants, Database, Name]
 
   DatabasePassword:
-    Description: 'The randomly generated password for the database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasepassword'
+    Description: 'The randomly generated password for the administrative user (DatabaseUsername). Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasepassword'
     Export:
       Name: !Sub "${AWS::StackName}-database-password"
     Value: !GetAtt LambdaRunnerDbPassword.RandomString
 
   DatabasePortCore:
-    Description: 'The port number that will accept connections on this DB cluster. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databaseportcore'
+    Description: 'The port number that will accept connections on the Core database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databaseportcore'
     Export:
       Name: !Sub "${AWS::StackName}-database-port-core"
     Value: !If
@@ -1510,7 +1510,7 @@ Outputs:
       - !GetAtt RdsDbClusterCore.Endpoint.Port
 
   DatabasePortLibfeat:
-    Description: 'The port number that will accept connections on this DB cluster. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databaseportlibfeat'
+    Description: 'The port number that will accept connections on the Libfeat database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databaseportlibfeat'
     Export:
       Name: !Sub "${AWS::StackName}-database-port-libfeat"
     Value: !If
@@ -1519,7 +1519,7 @@ Outputs:
       - !GetAtt RdsDbClusterLibfeat.Endpoint.Port
 
   DatabasePortRes:
-    Description: 'The port number that will accept connections on this DB cluster. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databaseportres'
+    Description: 'The port number that will accept connections on the Res database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databaseportres'
     Export:
       Name: !Sub "${AWS::StackName}-database-port-res"
     Value: !If
@@ -1540,7 +1540,7 @@ Outputs:
     Value: !Ref Ec2InternetGateway
 
   Ec2SecurityGroupInternal:
-    Description: 'The ID of the VPC. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#ec2securitygroupinternal'
+    Description: 'The security group used internally. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#ec2securitygroupinternal'
     Export:
       Name: !Sub "${AWS::StackName}-ec2-security-group-internal"
     Value: !Ref Ec2SecurityGroupInternal
