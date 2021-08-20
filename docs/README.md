@@ -188,7 +188,7 @@ Technical information on AWS Cloudformation parameters can be seen at
 ### DatabaseHostCore
 
 1. **Synopsis:**
-   One of 3 Senzing database clusters that hold the Senzing Model.
+   One of 3 Senzing databases that hold the Senzing Model.
 1. **Details:**
    See the database cluster having a Name in the form `{StackName}-aurora-senzing-core-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
@@ -197,7 +197,7 @@ Technical information on AWS Cloudformation parameters can be seen at
 ### DatabaseHostLibfeat
 
 1. **Synopsis:**
-   Two of 3 Senzing database clusters that hold the Senzing Model.
+   Two of 3 Senzing databases that hold the Senzing Model.
 1. **Details:**
    See the database cluster having a Name in the form `{StackName}-aurora-senzing-libfeat-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
@@ -206,7 +206,7 @@ Technical information on AWS Cloudformation parameters can be seen at
 ### DatabaseHostRes
 
 1. **Synopsis:**
-   Three of 3 Senzing database clusters that hold the Senzing Model.
+   Three of 3 Senzing databases that hold the Senzing Model.
 1. **Details:**
    See the database cluster having a Name in the form `{StackName}-aurora-senzing-res-cluster` in the
    [AWS RDS Console](https://console.aws.amazon.com/rds/home?#databases:).
