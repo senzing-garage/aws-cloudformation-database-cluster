@@ -926,17 +926,31 @@ Resources:
                       # Wait for completion.
                       # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ecs.html#waiters
 
-                      waiter = ecs.get_waiter('tasks_stopped')
-                      waiter.wait(
-                          cluster=properties['ClusterId'],
-                          tasks=[response['tasks'][0]['taskArn']],
-                      )
+                      task_list = response.get('tasks', [])
+                      if len(task_list) > 0:
+                          taskArn = task_list[0].get('taskArn', None)
+                          cluster = properties.get('ClusterId', None)
 
-                      response['describe_task'] = ecs.describe_tasks(
-                          cluster=properties['ClusterId'],
-                          tasks=[response['tasks'][0]['taskArn']],
-                      )
-                      logger.info("describe_task response: {0}".format(json.dumps(response['describe_task'], cls=DateTimeEncoder)))
+                          if not [x for x in (taskArn, cluster) if x is None]:
+                              waiter = ecs.get_waiter('tasks_stopped')
+                              waiter.wait(
+                                  cluster=cluster,
+                                  tasks=[taskArn],
+                              )
+
+                              response['describe_task'] = ecs.describe_tasks(
+                                  cluster=cluster,
+                                  tasks=[taskArn],
+                              )
+                              logger.info("describe_task response: {0}".format(json.dumps(response.get('describe_task', {}), cls=DateTimeEncoder)))
+
+                      # test for failures and log any
+                      fail_list = response.get('failures', [])
+                      if len(fail_list) > 0:
+                          for item in fail_list:
+                              logger.info(f"Task failed to run.  ARN: {item.get('arn', 'unknown')}")
+                              logger.info(f"  Reason: {item.get('reason', 'unknown')}")
+                              logger.info(f"  Details: {item.get('detail','none')}")
 
                       exit_code = response.get('describe_task', {}).get('tasks', [{}])[0].get('containers', [{}])[0].get('exitCode', 99)
                       if exit_code != 0:
