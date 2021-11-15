@@ -1,0 +1,26 @@
+name: Copy CFTs to S3
+on:
+  release:
+    types:
+      - published
+jobs:
+  Copy_CFTs_to_S3:
+    runs-on: ubuntu-latest
+    name: Copy CFTs to S3
+    env:
+      FILE_TO_COPY_1: cloudformation
+    steps:
+    - uses: actions/checkout@v2
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.SENZING_AWS_ACCESS_KEY }}
+        aws-secret-access-key: ${{ secrets.SENZING_AWS_ACCESS_SECRET }}
+        aws-region: us-east-1
+    - name: Get the version of the just published release
+      id: get_version
+      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+    - name: Copy ${{ env.FILE_TO_COPY_1 }}.yaml to S3
+      run: aws s3 cp ${{ env.FILE_TO_COPY_1 }}.yaml s3://${{ secrets.SENZING_AWS_MARKETPLACE_BUCKET_NAME }}/aws-cloudformation-database-cluster/${{ env.FILE_TO_COPY_1 }}.yaml
+    - name: Copy ${{ env.FILE_TO_COPY_1 }}.yaml to S3 with version number
+      run: aws s3 cp ${{ env.FILE_TO_COPY_1 }}.yaml s3://${{ secrets.SENZING_AWS_BUCKET_NAME }}/aws-cloudformation-database-cluster/${{ env.FILE_TO_COPY_1 }}-${{ steps.get_version.outputs.VERSION }}.yaml
