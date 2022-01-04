@@ -604,6 +604,7 @@ Resources:
       Family: aurora-postgresql10
       Parameters:
         'synchronous_commit': 'off'
+        autovacuum_max_workers: 5
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-rds-db-cluster-parameter-group"
