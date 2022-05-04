@@ -16,19 +16,22 @@ Description: >-
 # -----------------------------------------------------------------------------
 
 Metadata:
+
   AWS::CloudFormation::Interface:
     ParameterGroups:
-      - Label:
+      -
+        Label:
           default: Senzing installation
         Parameters:
           - MultipleDatabases
-      - Label:
+      -
+        Label:
           default: Security responsibility
         Parameters:
           - SecurityResponsibility
     ParameterLabels:
       MultipleDatabases:
-        default: "Optional: Would you like to install into a single or multiple databases?"
+        default: 'Optional: Would you like to install into a single or multiple databases?'
       SecurityResponsibility:
         default: >-
           Required: A default deployment of this template is for public demonstration only.
@@ -42,22 +45,25 @@ Metadata:
 # -----------------------------------------------------------------------------
 
 Parameters:
-  # AWS Console: https://console.aws.amazon.com/cloudformation/home?#/stacks > {stack} > Parameters
+
+# AWS Console: https://console.aws.amazon.com/cloudformation/home?#/stacks > {stack} > Parameters
 
   MultipleDatabases:
     AllowedValues:
-      - "Single"
-      - "Multiple"
-    Default: "Multiple"
-    Description: "Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#multipledatabases"
+      - 'Single'
+      - 'Multiple'
+    Default: 'Multiple'
+    Description: 'Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#multipledatabases'
     Type: String
 
+
   SecurityResponsibility:
-    AllowedPattern: ".+|^I AGREE$"
+    AllowedPattern: '.+|^I AGREE$'
     ConstraintDescription: SecurityResponsibility parameter must be 'I AGREE'
-    Default: "_"
-    Description: "Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#securityresponsibility"
+    Default: '_'
+    Description: 'Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#securityresponsibility'
     Type: String
+
 
 # -----------------------------------------------------------------------------
 # Rules
@@ -65,11 +71,12 @@ Parameters:
 # -----------------------------------------------------------------------------
 
 Rules:
+
   ConfirmSecurityResponsibility:
     Assertions:
       - Assert: !Equals
           - !Ref SecurityResponsibility
-          - "I AGREE"
+          - 'I AGREE'
         AssertDescription: 'Understanding responsibility and entering "I AGREE" is required to proceed.'
 
 # -----------------------------------------------------------------------------
@@ -78,13 +85,13 @@ Rules:
 # -----------------------------------------------------------------------------
 
 Mappings:
+
   Constants:
     Database:
       Name: G2
       Username: senzing
     Images:
-      PostgresClient: docker.io/senzing/postgresql-client:2.0.1
-      # PostgresClient: public.ecr.aws/senzing/postgresql-client:1.1.2
+      PostgresClient: public.ecr.aws/senzing/postgresql-client:1.1.2
     Stack:
       Name: database-cluster
   VpcCidrs:
@@ -105,12 +112,15 @@ Mappings:
 # -----------------------------------------------------------------------------
 
 Conditions:
+
   IfMultipleDatabases: !Equals
     - !Ref MultipleDatabases
-    - "Multiple"
+    - 'Multiple'
+
 
   IfSingleDatabase: !Not
-    - !Equals [!Ref MultipleDatabases, "Multiple"]
+    - !Equals [ !Ref MultipleDatabases,'Multiple']
+
 
 # -----------------------------------------------------------------------------
 # Resources
@@ -118,33 +128,37 @@ Conditions:
 # -----------------------------------------------------------------------------
 
 Resources:
-  # -- Iam -----------------------------------------------------------------
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
-  # AWS Console: https://console.aws.amazon.com/iam/home?#/roles > Search for {stack}
+# -- Iam -----------------------------------------------------------------
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
+# AWS Console: https://console.aws.amazon.com/iam/home?#/roles > Search for {stack}
 
   IamRoleInitPostgres:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-          - Action:
+          -
+            Action:
               - sts:AssumeRole
             Effect: Allow
             Principal:
               Service:
                 - ecs-tasks.amazonaws.com
-        Version: "2012-10-17"
+        Version: '2012-10-17'
       Description: !Sub "${AWS::StackName}-iam-role-init-postgres"
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-iam-role-init-postgres"
     Type: AWS::IAM::Role
 
+
   IamRoleLambda:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-          - Action:
+          -
+            Action:
               - sts:AssumeRole
             Effect: Allow
             Principal:
@@ -153,83 +167,92 @@ Resources:
                 - lambda.amazonaws.com
                 - route53.amazonaws.com
                 - sqs.amazonaws.com
-        Version: "2012-10-17"
+        Version: '2012-10-17'
       Description: !Sub "${AWS::StackName}-iam-role-lambda"
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-iam-role-lambda"
     Type: AWS::IAM::Role
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-policy.html
-  # AWS Console: https://console.aws.amazon.com/iam/home?#/roles > Search for {stack} > {role} > inline policy
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-policy.html
+# AWS Console: https://console.aws.amazon.com/iam/home?#/roles > Search for {stack} > {role} > inline policy
+
 
   IamPolicyLoggingCreateStream:
     Properties:
       PolicyName: !Sub "${AWS::StackName}-iam-policy-logging-create-stream"
       PolicyDocument:
         Statement:
-          - Action:
+          -
+            Action:
               - logs:CreateLogStream
               - logs:PutLogEvents
             Effect: Allow
             Resource:
-              - "*"
-        Version: "2012-10-17"
+              - '*'
+        Version: '2012-10-17'
       Roles:
-        - !Ref IamRoleInitPostgres
-        - !Ref IamRoleLambda
+       - !Ref IamRoleInitPostgres
+       - !Ref IamRoleLambda
     Type: AWS::IAM::Policy
+
 
   IamPolicyPassRole:
     Properties:
       PolicyName: !Sub "${AWS::StackName}-iam-policy-pass-role"
       PolicyDocument:
         Statement:
-          - Action:
+          -
+            Action:
               - iam:PassRole
             Effect: Allow
             Resource:
-              - "*"
-        Version: "2012-10-17"
+              - '*'
+        Version: '2012-10-17'
       Roles:
-        - !Ref IamRoleLambda
+       - !Ref IamRoleLambda
     Type: AWS::IAM::Policy
+
 
   IamPolicyRds:
     Properties:
       PolicyName: !Sub "${AWS::StackName}-iam-policy-rds"
       PolicyDocument:
         Statement:
-          - Action:
+          -
+            Action:
               - rds:ModifyDBCluster
             Effect: Allow
             Resource:
-              - "*"
-        Version: "2012-10-17"
+              - '*'
+        Version: '2012-10-17'
       Roles:
-        - !Ref IamRoleLambda
+       - !Ref IamRoleLambda
     Type: AWS::IAM::Policy
+
 
   IamPolicyTaskRunner:
     Properties:
       PolicyName: !Sub "${AWS::StackName}-iam-policy-task-runner"
       PolicyDocument:
         Statement:
-          - Action:
+          -
+            Action:
               - ecs:DescribeTasks
               - ecs:RunTask
             Effect: Allow
             Resource:
-              - "*"
-        Version: "2012-10-17"
+              - '*'
+        Version: '2012-10-17'
       Roles:
-        - !Ref IamRoleLambda
+       - !Ref IamRoleLambda
     Type: AWS::IAM::Policy
 
-  # -- Logging ------------------------------------------------------------------
+# -- Logging ------------------------------------------------------------------
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-loggroup.html
-  # AWS Console: https://console.aws.amazon.com/cloudwatch/home?#logsV2:log-groups > Search for {stack}
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-loggroup.html
+# AWS Console: https://console.aws.amazon.com/cloudwatch/home?#logsV2:log-groups > Search for {stack}
 
   LogsLogGroupDbCluster:
     Condition: IfSingleDatabase
@@ -239,6 +262,7 @@ Resources:
         - StackNameAsLower: !GetAtt LambdaRunnerStackNameAsLower.OutputString
     Type: AWS::Logs::LogGroup
 
+
   LogsLogGroupDbClusterCore:
     Condition: IfMultipleDatabases
     Properties:
@@ -246,6 +270,7 @@ Resources:
         - "/aws/rds/cluster/${StackNameAsLower}-aurora-senzing-core-cluster/postgresql"
         - StackNameAsLower: !GetAtt LambdaRunnerStackNameAsLower.OutputString
     Type: AWS::Logs::LogGroup
+
 
   LogsLogGroupDbClusterLibfeat:
     Condition: IfMultipleDatabases
@@ -255,6 +280,7 @@ Resources:
         - StackNameAsLower: !GetAtt LambdaRunnerStackNameAsLower.OutputString
     Type: AWS::Logs::LogGroup
 
+
   LogsLogGroupDbClusterRes:
     Condition: IfMultipleDatabases
     Properties:
@@ -263,35 +289,42 @@ Resources:
         - StackNameAsLower: !GetAtt LambdaRunnerStackNameAsLower.OutputString
     Type: AWS::Logs::LogGroup
 
+
   LogsLogGroupLambdaRandomPassword:
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-lambda-random-password"
     Type: AWS::Logs::LogGroup
+
 
   LogsLogGroupLambdaRandomString:
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-lambda-random-string"
     Type: AWS::Logs::LogGroup
 
+
   LogsLogGroupLambdaRunTask:
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-lambda-run-task"
     Type: AWS::Logs::LogGroup
+
 
   LogsLogGroupLambdaRunTaskAndWait:
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-lambda-run-task-and-wait"
     Type: AWS::Logs::LogGroup
 
+
   LogsLogGroupLambdaSetRdbTimeoutAction:
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-lambda-set-rdb-timeout-action"
     Type: AWS::Logs::LogGroup
 
+
   LogsLogGroupLambdaStringToLower:
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-lambda-string-to-lower"
     Type: AWS::Logs::LogGroup
+
 
   LogsLogGroupMain:
     Properties:
@@ -300,10 +333,10 @@ Resources:
         - StackName: !FindInMap [Constants, Stack, Name]
     Type: AWS::Logs::LogGroup
 
-  # -- Cloud, subnets, routing --------------------------------------------------
+# -- Cloud, subnets, routing --------------------------------------------------
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-vpc.html
-  # AWS Console: https://console.aws.amazon.com/vpc/home?#vpcs > Search for {stack}
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-vpc.html
+# AWS Console: https://console.aws.amazon.com/vpc/home?#vpcs > Search for {stack}
 
   Ec2Vpc:
     Properties:
@@ -318,15 +351,15 @@ Resources:
           Value: !Sub "${AWS::StackName}-ec2-vpc"
     Type: AWS::EC2::VPC
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-subnet.html
-  # AWS Console: https://console.aws.amazon.com/vpc/home?#subnets > Search for {stack}
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-subnet.html
+# AWS Console: https://console.aws.amazon.com/vpc/home?#subnets > Search for {stack}
 
   Ec2SubnetPrivate1:
     Properties:
       AvailabilityZone: !Select
-        - "0"
-        - !GetAZs
-          Ref: AWS::Region
+          - '0'
+          - !GetAZs
+            Ref: AWS::Region
       CidrBlock: !FindInMap
         - VpcCidrs
         - privsubnet1
@@ -337,12 +370,13 @@ Resources:
       VpcId: !Ref Ec2Vpc
     Type: AWS::EC2::Subnet
 
+
   Ec2SubnetPrivate2:
     Properties:
       AvailabilityZone: !Select
-        - "1"
-        - !GetAZs
-          Ref: AWS::Region
+          - '1'
+          - !GetAZs
+            Ref: AWS::Region
       CidrBlock: !FindInMap
         - VpcCidrs
         - privsubnet2
@@ -353,12 +387,13 @@ Resources:
       VpcId: !Ref Ec2Vpc
     Type: AWS::EC2::Subnet
 
+
   Ec2SubnetPublic1:
     Properties:
       AvailabilityZone: !Select
-        - "0"
-        - !GetAZs
-          Ref: AWS::Region
+          - '0'
+          - !GetAZs
+            Ref: AWS::Region
       CidrBlock: !FindInMap
         - VpcCidrs
         - pubsubnet1
@@ -369,12 +404,13 @@ Resources:
       VpcId: !Ref Ec2Vpc
     Type: AWS::EC2::Subnet
 
+
   Ec2SubnetPublic2:
     Properties:
       AvailabilityZone: !Select
-        - "1"
-        - !GetAZs
-          Ref: AWS::Region
+          - '1'
+          - !GetAZs
+            Ref: AWS::Region
       CidrBlock: !FindInMap
         - VpcCidrs
         - pubsubnet2
@@ -385,8 +421,8 @@ Resources:
       VpcId: !Ref Ec2Vpc
     Type: AWS::EC2::Subnet
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-eip.html
-  # AWS Console: https://console.aws.amazon.com/vpc/home?#Addresses: > Search for {stack}
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-eip.html
+# AWS Console: https://console.aws.amazon.com/vpc/home?#Addresses: > Search for {stack}
 
   Ec2Eip:
     Properties:
@@ -396,8 +432,8 @@ Resources:
           Value: !Sub "${AWS::StackName}-ec2-eip"
     Type: AWS::EC2::EIP
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-natgateway.html
-  # AWS Console: https://console.aws.amazon.com/vpc/home?#NatGateways: > Search for {stack}
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-natgateway.html
+# AWS Console: https://console.aws.amazon.com/vpc/home?#NatGateways: > Search for {stack}
 
   Ec2NatGateway:
     Properties:
@@ -408,18 +444,20 @@ Resources:
           Value: !Sub "${AWS::StackName}-ec2-nat-gateway"
     Type: AWS::EC2::NatGateway
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group.html
-  # AWS Console: https://console.aws.amazon.com/vpc/home?#SecurityGroups > Search for {stack}
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group.html
+# AWS Console: https://console.aws.amazon.com/vpc/home?#SecurityGroups > Search for {stack}
 
   Ec2SecurityGroupInternal:
     Properties:
       GroupDescription: !Sub "${AWS::StackName} - ECS internal open ports."
       SecurityGroupEgress:
-        - CidrIp: 0.0.0.0/0
+        -
+          CidrIp: 0.0.0.0/0
           Description: All
-          IpProtocol: "-1"
+          IpProtocol: '-1'
       SecurityGroupIngress:
-        - CidrIp: !FindInMap
+        -
+          CidrIp: !FindInMap
             - VpcCidrs
             - vpc
             - cidr
@@ -433,21 +471,25 @@ Resources:
       VpcId: !Ref Ec2Vpc
     Type: AWS::EC2::SecurityGroup
 
+
   Ec2SecurityGroupLambdaRunner:
     Properties:
       GroupDescription: !Sub "${AWS::StackName} - Lambda open ports."
       SecurityGroupEgress:
-        - CidrIp: 0.0.0.0/0
+        -
+          CidrIp: 0.0.0.0/0
           Description: All
-          IpProtocol: "-1"
+          IpProtocol: '-1'
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-ec2-security-group-lambda-runner"
       VpcId: !Ref Ec2Vpc
     Type: AWS::EC2::SecurityGroup
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-internetgateway.html
-  # AWS Console: https://console.aws.amazon.com/vpc/home?#igws > Search for {stack}
+
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-internetgateway.html
+# AWS Console: https://console.aws.amazon.com/vpc/home?#igws > Search for {stack}
 
   Ec2InternetGateway:
     Properties:
@@ -456,8 +498,8 @@ Resources:
           Value: !Sub "${AWS::StackName}-ec2-internet-gateway"
     Type: AWS::EC2::InternetGateway
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-vpc-gateway-attachment.html
-  # AWS Console: https://console.aws.amazon.com/vpc/home?#igws > Search for {stack} > State & VPI ID
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-vpc-gateway-attachment.html
+# AWS Console: https://console.aws.amazon.com/vpc/home?#igws > Search for {stack} > State & VPI ID
 
   Ec2VpcGatewayAttachment:
     Properties:
@@ -465,8 +507,8 @@ Resources:
       VpcId: !Ref Ec2Vpc
     Type: AWS::EC2::VPCGatewayAttachment
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-route-table.html
-  # AWS Console: https://console.aws.amazon.com/vpc/home?#RouteTables > Search for {stack}
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-route-table.html
+# AWS Console: https://console.aws.amazon.com/vpc/home?#RouteTables > Search for {stack}
 
   Ec2RouteTablePrivate:
     Properties:
@@ -476,6 +518,7 @@ Resources:
       VpcId: !Ref Ec2Vpc
     Type: AWS::EC2::RouteTable
 
+
   Ec2RouteTablePublic:
     Properties:
       Tags:
@@ -484,8 +527,8 @@ Resources:
       VpcId: !Ref Ec2Vpc
     Type: AWS::EC2::RouteTable
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-route.html
-  # AWS Console: https://console.aws.amazon.com/vpc/home?#RouteTables > {name} > "Routes" tab
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-route.html
+# AWS Console: https://console.aws.amazon.com/vpc/home?#RouteTables > {name} > "Routes" tab
 
   Ec2RoutePrivate:
     Properties:
@@ -494,17 +537,18 @@ Resources:
       RouteTableId: !Ref Ec2RouteTablePrivate
     Type: AWS::EC2::Route
 
+
   Ec2RoutePublic:
     DependsOn:
-      - Ec2VpcGatewayAttachment
+     - Ec2VpcGatewayAttachment
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref Ec2InternetGateway
       RouteTableId: !Ref Ec2RouteTablePublic
     Type: AWS::EC2::Route
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-subnet-route-table-assoc.html
-  # AWS Console: https://console.aws.amazon.com/vpc/home?#RouteTables > {name} > "Subnet Associations" tab
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-subnet-route-table-assoc.html
+# AWS Console: https://console.aws.amazon.com/vpc/home?#RouteTables > {name} > "Subnet Associations" tab
 
   Ec2SubnetRouteTableAssociationPrivate1:
     Properties:
@@ -512,11 +556,13 @@ Resources:
       SubnetId: !Ref Ec2SubnetPrivate1
     Type: AWS::EC2::SubnetRouteTableAssociation
 
+
   Ec2SubnetRouteTableAssociationPrivate2:
     Properties:
       RouteTableId: !Ref Ec2RouteTablePrivate
       SubnetId: !Ref Ec2SubnetPrivate2
     Type: AWS::EC2::SubnetRouteTableAssociation
+
 
   Ec2SubnetRouteTableAssociationPublic1:
     Properties:
@@ -524,16 +570,18 @@ Resources:
       SubnetId: !Ref Ec2SubnetPublic1
     Type: AWS::EC2::SubnetRouteTableAssociation
 
+
   Ec2SubnetRouteTableAssociationPublic2:
     Properties:
       RouteTableId: !Ref Ec2RouteTablePublic
       SubnetId: !Ref Ec2SubnetPublic2
     Type: AWS::EC2::SubnetRouteTableAssociation
 
-  # -- Database -----------------------------------------------------------------
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbsubnet-group.html
-  # AWS Console: https://console.aws.amazon.com/rds/home#db-subnet-groups-list: > Search for {stack}
+# -- Database -----------------------------------------------------------------
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbsubnet-group.html
+# AWS Console: https://console.aws.amazon.com/rds/home#db-subnet-groups-list: > Search for {stack}
 
   RdsDbSubnetGroup:
     Properties:
@@ -547,29 +595,29 @@ Resources:
           Value: !Sub "${AWS::StackName}-rds-db-subnet-group"
     Type: AWS::RDS::DBSubnetGroup
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbclusterparametergroup.html
-  # AWS Console: https://console.aws.amazon.com/rds/home?#parameter-groups: > Search for {stack}
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbclusterparametergroup.html
+# AWS Console: https://console.aws.amazon.com/rds/home?#parameter-groups: > Search for {stack}
 
   RdsDbClusterParameterGroup:
     Properties:
       Description: !Sub "${AWS::StackName}-rds-db-cluster-parameter-group-description"
       Family: aurora-postgresql10
       Parameters:
-        "synchronous_commit": "off"
+        'synchronous_commit': 'off'
         autovacuum_max_workers: 5
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-rds-db-cluster-parameter-group"
     Type: AWS::RDS::DBClusterParameterGroup
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html
-  # AWS Console: https://console.aws.amazon.com/rds/home?#databases: > Search for {stack}
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbcluster.html
+# AWS Console: https://console.aws.amazon.com/rds/home?#databases: > Search for {stack}
 
   RdsDbCluster:
     Condition: IfSingleDatabase
     DependsOn:
-      - LogsLogGroupDbCluster
-      - RdsDbSubnetGroup
+     - LogsLogGroupDbCluster
+     - RdsDbSubnetGroup
     Properties:
       AvailabilityZones:
         - !GetAtt Ec2SubnetPrivate1.AvailabilityZone
@@ -586,7 +634,7 @@ Resources:
       EnableHttpEndpoint: true
       Engine: aurora-postgresql
       EngineMode: serverless
-      EngineVersion: "10.12"
+      EngineVersion: '10.12'
       MasterUsername: !FindInMap [Constants, Database, Username]
       MasterUserPassword: !GetAtt LambdaRunnerDbPassword.RandomString
       ScalingConfiguration:
@@ -594,10 +642,10 @@ Resources:
         MaxCapacity: 192
         MinCapacity: 2
         SecondsUntilAutoPause: 3600
-      #       FIXME:  Uncomment once 'TimeoutAction' is supported.
-      #       https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/298
-      #       https://console.aws.amazon.com/support/home#/case/?displayId=7705681311&language=en
-      #       TimeoutAction: ForceApplyCapacityChange
+#       FIXME:  Uncomment once 'TimeoutAction' is supported.
+#       https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/298
+#       https://console.aws.amazon.com/support/home#/case/?displayId=7705681311&language=en
+#       TimeoutAction: ForceApplyCapacityChange
       StorageEncrypted: true
       Tags:
         - Key: Name
@@ -606,11 +654,12 @@ Resources:
         - !Ref Ec2SecurityGroupInternal
     Type: AWS::RDS::DBCluster
 
+
   RdsDbClusterCore:
     Condition: IfMultipleDatabases
     DependsOn:
-      - LogsLogGroupDbClusterCore
-      - RdsDbSubnetGroup
+     - LogsLogGroupDbClusterCore
+     - RdsDbSubnetGroup
     Properties:
       AvailabilityZones:
         - !GetAtt Ec2SubnetPrivate1.AvailabilityZone
@@ -627,7 +676,7 @@ Resources:
       EnableHttpEndpoint: true
       Engine: aurora-postgresql
       EngineMode: serverless
-      EngineVersion: "10.12"
+      EngineVersion: '10.12'
       MasterUsername: !FindInMap [Constants, Database, Username]
       MasterUserPassword: !GetAtt LambdaRunnerDbPassword.RandomString
       ScalingConfiguration:
@@ -635,10 +684,10 @@ Resources:
         MaxCapacity: 192
         MinCapacity: 2
         SecondsUntilAutoPause: 3600
-      #       FIXME:  Uncomment once 'TimeoutAction' is supported.
-      #       https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/298
-      #       https://console.aws.amazon.com/support/home#/case/?displayId=7705681311&language=en
-      #       TimeoutAction: ForceApplyCapacityChange
+#       FIXME:  Uncomment once 'TimeoutAction' is supported.
+#       https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/298
+#       https://console.aws.amazon.com/support/home#/case/?displayId=7705681311&language=en
+#       TimeoutAction: ForceApplyCapacityChange
       StorageEncrypted: true
       Tags:
         - Key: Name
@@ -647,11 +696,12 @@ Resources:
         - !Ref Ec2SecurityGroupInternal
     Type: AWS::RDS::DBCluster
 
+
   RdsDbClusterLibfeat:
     Condition: IfMultipleDatabases
     DependsOn:
-      - LogsLogGroupDbClusterLibfeat
-      - RdsDbSubnetGroup
+     - LogsLogGroupDbClusterLibfeat
+     - RdsDbSubnetGroup
     Properties:
       AvailabilityZones:
         - !GetAtt Ec2SubnetPrivate1.AvailabilityZone
@@ -668,7 +718,7 @@ Resources:
       EnableHttpEndpoint: true
       Engine: aurora-postgresql
       EngineMode: serverless
-      EngineVersion: "10.12"
+      EngineVersion: '10.12'
       MasterUsername: !FindInMap [Constants, Database, Username]
       MasterUserPassword: !GetAtt LambdaRunnerDbPassword.RandomString
       ScalingConfiguration:
@@ -676,10 +726,10 @@ Resources:
         MaxCapacity: 192
         MinCapacity: 2
         SecondsUntilAutoPause: 3600
-      #       FIXME:  Uncomment once 'TimeoutAction' is supported.
-      #       https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/298
-      #       https://console.aws.amazon.com/support/home#/case/?displayId=7705681311&language=en
-      #       TimeoutAction: ForceApplyCapacityChange
+#       FIXME:  Uncomment once 'TimeoutAction' is supported.
+#       https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/298
+#       https://console.aws.amazon.com/support/home#/case/?displayId=7705681311&language=en
+#       TimeoutAction: ForceApplyCapacityChange
       StorageEncrypted: true
       Tags:
         - Key: Name
@@ -688,11 +738,12 @@ Resources:
         - !Ref Ec2SecurityGroupInternal
     Type: AWS::RDS::DBCluster
 
+
   RdsDbClusterRes:
     Condition: IfMultipleDatabases
     DependsOn:
-      - LogsLogGroupDbClusterRes
-      - RdsDbSubnetGroup
+     - LogsLogGroupDbClusterRes
+     - RdsDbSubnetGroup
     Properties:
       AvailabilityZones:
         - !GetAtt Ec2SubnetPrivate1.AvailabilityZone
@@ -709,7 +760,7 @@ Resources:
       EnableHttpEndpoint: true
       Engine: aurora-postgresql
       EngineMode: serverless
-      EngineVersion: "10.12"
+      EngineVersion: '10.12'
       MasterUsername: !FindInMap [Constants, Database, Username]
       MasterUserPassword: !GetAtt LambdaRunnerDbPassword.RandomString
       ScalingConfiguration:
@@ -717,10 +768,10 @@ Resources:
         MaxCapacity: 192
         MinCapacity: 2
         SecondsUntilAutoPause: 3600
-      #       FIXME:  Uncomment once 'TimeoutAction' is supported.
-      #       https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/298
-      #       https://console.aws.amazon.com/support/home#/case/?displayId=7705681311&language=en
-      #       TimeoutAction: ForceApplyCapacityChange
+#       FIXME:  Uncomment once 'TimeoutAction' is supported.
+#       https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/298
+#       https://console.aws.amazon.com/support/home#/case/?displayId=7705681311&language=en
+#       TimeoutAction: ForceApplyCapacityChange
       StorageEncrypted: true
       Tags:
         - Key: Name
@@ -729,10 +780,11 @@ Resources:
         - !Ref Ec2SecurityGroupInternal
     Type: AWS::RDS::DBCluster
 
-  # -- ECS Cluster --------------------------------------------------------------
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-cluster.html
-  # AWS Console: https://console.aws.amazon.com/ecs/home?#/clusters > Search for {stack}
+# -- ECS Cluster --------------------------------------------------------------
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-cluster.html
+# AWS Console: https://console.aws.amazon.com/ecs/home?#/clusters > Search for {stack}
 
   EcsCluster:
     Properties:
@@ -742,7 +794,7 @@ Resources:
           Value: !Sub "${AWS::StackName}-ecs-cluster"
     Type: AWS::ECS::Cluster
 
-  # -- Wait conditions ----------------------------------------------------------
+# -- Wait conditions ----------------------------------------------------------
 
   DbClusterCoreReady:
     Metadata:
@@ -752,6 +804,7 @@ Resources:
         - !GetAtt RdsDbClusterCore.Endpoint.Address
     Type: AWS::CloudFormation::WaitConditionHandle
 
+
   DbClusterLibfeatReady:
     Metadata:
       DBClusterCoreReady: !If
@@ -759,6 +812,7 @@ Resources:
         - !GetAtt RdsDbCluster.Endpoint.Address
         - !GetAtt RdsDbClusterLibfeat.Endpoint.Address
     Type: AWS::CloudFormation::WaitConditionHandle
+
 
   DbClusterResReady:
     Metadata:
@@ -768,15 +822,16 @@ Resources:
         - !GetAtt RdsDbClusterRes.Endpoint.Address
     Type: AWS::CloudFormation::WaitConditionHandle
 
-  # -- LambdaFunction -----------------------------------------------------------
+# -- LambdaFunction -----------------------------------------------------------
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html
-  # AWS Console: https://console.aws.amazon.com/lambda/home?#/functions > Search for {stack}
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html
+# AWS Console: https://console.aws.amazon.com/lambda/home?#/functions > Search for {stack}
+
 
   LambdaFunctionRandomString:
     DependsOn:
-      - Ec2SubnetRouteTableAssociationPrivate1
-      - Ec2SubnetRouteTableAssociationPrivate2
+     - Ec2SubnetRouteTableAssociationPrivate1
+     - Ec2SubnetRouteTableAssociationPrivate2
     Properties:
       Code:
         ZipFile: |
@@ -819,10 +874,11 @@ Resources:
       Timeout: 600
     Type: AWS::Lambda::Function
 
+
   LambdaFunctionRunTaskAndWait:
     DependsOn:
-      - Ec2SubnetRouteTableAssociationPrivate1
-      - Ec2SubnetRouteTableAssociationPrivate2
+     - Ec2SubnetRouteTableAssociationPrivate1
+     - Ec2SubnetRouteTableAssociationPrivate2
     Properties:
       Code:
         ZipFile: |
@@ -920,6 +976,7 @@ Resources:
       Timeout: 600
     Type: AWS::Lambda::Function
 
+
   LambdaFunctionSetRdbTimeoutAction:
     Properties:
       Code:
@@ -970,6 +1027,7 @@ Resources:
       Timeout: 30
     Type: AWS::Lambda::Function
 
+
   LambdaFunctionStringToLower:
     Properties:
       Code:
@@ -1010,11 +1068,14 @@ Resources:
           Value: !Sub "${AWS::StackName}-lambda-string-to-lower"
     Type: AWS::Lambda::Function
 
-  # -- Run Lambda jobs ----------------------------------------------------------
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources.html
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cfn-customresource.html
-  # AWS Console: FIXME:  none?
+
+# -- Run Lambda jobs ----------------------------------------------------------
+
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources.html
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cfn-customresource.html
+# AWS Console: FIXME:  none?
+
 
   LambdaRunnerDbPassword:
     Properties:
@@ -1025,9 +1086,11 @@ Resources:
           Value: !Sub "${AWS::StackName}-lambda-runner-db-password"
     Type: Custom::LambdaRunnerDbPassword
 
+
+
   LambdaRunnerInitPostgresConfiguration:
     DependsOn:
-      - LambdaRunnerInitPostgresCore
+     - LambdaRunnerInitPostgresCore
     Properties:
       ClusterId: !Ref EcsCluster
       RunTaskParameters:
@@ -1054,9 +1117,10 @@ Resources:
           Value: !Sub "${AWS::StackName}-lambda-runner-init-postgres-configuration"
     Type: Custom::LambdaRunnerInitPostgresConfiguration
 
+
   LambdaRunnerInitPostgresCore:
     DependsOn:
-      - DbClusterCoreReady
+     - DbClusterCoreReady
     Properties:
       ClusterId: !Ref EcsCluster
       RunTaskParameters:
@@ -1083,9 +1147,10 @@ Resources:
           Value: !Sub "${AWS::StackName}-lambda-runner-init-postgres-core"
     Type: Custom::LambdaRunnerInitPostgresCore
 
+
   LambdaRunnerInitPostgresLibfeat:
     DependsOn:
-      - DbClusterLibfeatReady
+     - DbClusterLibfeatReady
     Properties:
       ClusterId: !Ref EcsCluster
       RunTaskParameters:
@@ -1112,9 +1177,10 @@ Resources:
           Value: !Sub "${AWS::StackName}-lambda-runner-init-postgres-libfeat"
     Type: Custom::LambdaRunnerInitPostgresLibfeat
 
+
   LambdaRunnerInitPostgresRes:
     DependsOn:
-      - DbClusterResReady
+     - DbClusterResReady
     Properties:
       ClusterId: !Ref EcsCluster
       RunTaskParameters:
@@ -1141,6 +1207,7 @@ Resources:
           Value: !Sub "${AWS::StackName}-lambda-runner-init-postgres-res"
     Type: Custom::LambdaRunnerInitPostgresRes
 
+
   LambdaRunnerSetPostgresTimeoutAction:
     Condition: IfSingleDatabase
     Properties:
@@ -1151,6 +1218,7 @@ Resources:
         - Key: Name
           Value: !Sub "${AWS::StackName}-lambda-runner-set-postgres-timeout-action"
     Type: Custom::LambdaRunnerSetPostgresTimeoutAction
+
 
   LambdaRunnerSetPostgresCoreTimeoutAction:
     Condition: IfMultipleDatabases
@@ -1163,6 +1231,7 @@ Resources:
           Value: !Sub "${AWS::StackName}-lambda-runner-set-postgres-core-timeout-action"
     Type: Custom::LambdaRunnerSetPostgresCoreTimeoutAction
 
+
   LambdaRunnerSetPostgresLibfeatTimeoutAction:
     Condition: IfMultipleDatabases
     Properties:
@@ -1173,6 +1242,7 @@ Resources:
         - Key: Name
           Value: !Sub "${AWS::StackName}-lambda-runner-set-postgres-libfeat-timeout-action"
     Type: Custom::LambdaRunnerSetPostgresLibfeatTimeoutAction
+
 
   LambdaRunnerSetPostgresResTimeoutAction:
     Condition: IfMultipleDatabases
@@ -1185,6 +1255,7 @@ Resources:
           Value: !Sub "${AWS::StackName}-lambda-runner-set-postgres-res-timeout-action"
     Type: Custom::LambdaRunnerSetPostgresResTimeoutAction
 
+
   LambdaRunnerStackNameAsLower:
     Properties:
       InputString: !Sub "${AWS::StackName}"
@@ -1194,16 +1265,20 @@ Resources:
           Value: !Sub "${AWS::StackName}-lambda-runner-stack-name-as-lower"
     Type: Custom::LambdaRunnerStackNameAsLower
 
-  # -- EcsTaskDefinition --------------------------------------------------------
+# -- EcsTaskDefinition --------------------------------------------------------
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html
-  # AWS Console: https://console.aws.amazon.com/ecs/home?#/taskDefinitions > Search for {stack}
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html
+# AWS Console: https://console.aws.amazon.com/ecs/home?#/taskDefinitions > Search for {stack}
+
+
 
   EcsTaskDefinitionInitPostgresConfiguration:
     Properties:
       ContainerDefinitions:
-        - Environment:
-            - Name: SENZING_DATABASE_URL
+        -
+          Environment:
+            -
+              Name: SENZING_DATABASE_URL
               Value: !Sub
                 - "postgresql://${DatabaseUsername}:${DatabasePassword}@${DatabaseAddress}:${DatabasePort}/${DatabaseName}"
                 - DatabaseUsername: !FindInMap [Constants, Database, Username]
@@ -1217,7 +1292,8 @@ Resources:
                     - IfSingleDatabase
                     - !GetAtt RdsDbCluster.Endpoint.Port
                     - !GetAtt RdsDbClusterCore.Endpoint.Port
-            - Name: SENZING_SQL_FILE
+            -
+              Name: SENZING_SQL_FILE
               Value: /app/insert-senzing-configuration.sql
           Essential: true
           Image: !FindInMap [Constants, Images, PostgresClient]
@@ -1230,10 +1306,10 @@ Resources:
           Name: postgresinit
           Privileged: false
           ReadonlyRootFilesystem: false
-      Cpu: "512"
+      Cpu: '512'
       ExecutionRoleArn: !GetAtt IamRoleInitPostgres.Arn
       Family: !Sub "${AWS::StackName}-task-definition-init-postgres-configuration"
-      Memory: "1024"
+      Memory: '1024'
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
@@ -1242,11 +1318,14 @@ Resources:
           Value: !Sub "${AWS::StackName}-ecs-task-definition-init-postgres-configuration"
     Type: AWS::ECS::TaskDefinition
 
+
   EcsTaskDefinitionInitPostgresCore:
     Properties:
       ContainerDefinitions:
-        - Environment:
-            - Name: SENZING_DATABASE_URL
+        -
+          Environment:
+            -
+              Name: SENZING_DATABASE_URL
               Value: !Sub
                 - "postgresql://${DatabaseUsername}:${DatabasePassword}@${DatabaseAddress}:${DatabasePort}/${DatabaseName}"
                 - DatabaseUsername: !FindInMap [Constants, Database, Username]
@@ -1260,7 +1339,8 @@ Resources:
                     - IfSingleDatabase
                     - !GetAtt RdsDbCluster.Endpoint.Port
                     - !GetAtt RdsDbClusterCore.Endpoint.Port
-            - Name: SENZING_SQL_FILE
+            -
+              Name: SENZING_SQL_FILE
               Value: /opt/senzing/g2/resources/schema/g2core-schema-postgresql-create.sql
           Essential: true
           Image: !FindInMap [Constants, Images, PostgresClient]
@@ -1273,10 +1353,10 @@ Resources:
           Name: postgresinit
           Privileged: false
           ReadonlyRootFilesystem: false
-      Cpu: "512"
+      Cpu: '512'
       ExecutionRoleArn: !GetAtt IamRoleInitPostgres.Arn
       Family: !Sub "${AWS::StackName}-task-definition-init-postgres-core"
-      Memory: "1024"
+      Memory: '1024'
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
@@ -1285,11 +1365,14 @@ Resources:
           Value: !Sub "${AWS::StackName}-ecs-task-definition-init-postgres-core"
     Type: AWS::ECS::TaskDefinition
 
+
   EcsTaskDefinitionInitPostgresLibfeat:
     Properties:
       ContainerDefinitions:
-        - Environment:
-            - Name: SENZING_DATABASE_URL
+        -
+          Environment:
+            -
+              Name: SENZING_DATABASE_URL
               Value: !Sub
                 - "postgresql://${DatabaseUsername}:${DatabasePassword}@${DatabaseAddress}:${DatabasePort}/${DatabaseName}"
                 - DatabaseUsername: !FindInMap [Constants, Database, Username]
@@ -1303,7 +1386,8 @@ Resources:
                     - IfSingleDatabase
                     - !GetAtt RdsDbCluster.Endpoint.Port
                     - !GetAtt RdsDbClusterLibfeat.Endpoint.Port
-            - Name: SENZING_SQL_FILE
+            -
+              Name: SENZING_SQL_FILE
               Value: /opt/senzing/g2/resources/schema/g2core-schema-postgresql-create.sql
           Essential: true
           Image: !FindInMap [Constants, Images, PostgresClient]
@@ -1316,10 +1400,10 @@ Resources:
           Name: postgresinit
           Privileged: false
           ReadonlyRootFilesystem: false
-      Cpu: "512"
+      Cpu: '512'
       ExecutionRoleArn: !GetAtt IamRoleInitPostgres.Arn
       Family: !Sub "${AWS::StackName}-task-definition-init-postgres-libfeat"
-      Memory: "1024"
+      Memory: '1024'
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
@@ -1328,11 +1412,14 @@ Resources:
           Value: !Sub "${AWS::StackName}-ecs-task-definition-init-postgres-libfeat"
     Type: AWS::ECS::TaskDefinition
 
+
   EcsTaskDefinitionInitPostgresRes:
     Properties:
       ContainerDefinitions:
-        - Environment:
-            - Name: SENZING_DATABASE_URL
+        -
+          Environment:
+            -
+              Name: SENZING_DATABASE_URL
               Value: !Sub
                 - "postgresql://${DatabaseUsername}:${DatabasePassword}@${DatabaseAddress}:${DatabasePort}/${DatabaseName}"
                 - DatabaseUsername: !FindInMap [Constants, Database, Username]
@@ -1346,7 +1433,8 @@ Resources:
                     - IfSingleDatabase
                     - !GetAtt RdsDbCluster.Endpoint.Port
                     - !GetAtt RdsDbClusterRes.Endpoint.Port
-            - Name: SENZING_SQL_FILE
+            -
+              Name: SENZING_SQL_FILE
               Value: /opt/senzing/g2/resources/schema/g2core-schema-postgresql-create.sql
           Essential: true
           Image: !FindInMap [Constants, Images, PostgresClient]
@@ -1359,10 +1447,10 @@ Resources:
           Name: postgresinit
           Privileged: false
           ReadonlyRootFilesystem: false
-      Cpu: "512"
+      Cpu: '512'
       ExecutionRoleArn: !GetAtt IamRoleInitPostgres.Arn
       Family: !Sub "${AWS::StackName}-task-definition-init-postgres-res"
-      Memory: "1024"
+      Memory: '1024'
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
@@ -1371,22 +1459,25 @@ Resources:
           Value: !Sub "${AWS::StackName}-ecs-task-definition-init-postgres-res"
     Type: AWS::ECS::TaskDefinition
 
+
+
 # -----------------------------------------------------------------------------
 # Outputs
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/outputs-section-structure.html
 # -----------------------------------------------------------------------------
 
 Outputs:
-  # AWS Console: https://console.aws.amazon.com/cloudformation/home?#/stacks > {stack} > Outputs
+
+# AWS Console: https://console.aws.amazon.com/cloudformation/home?#/stacks > {stack} > Outputs
 
   AccountID:
-    Description: "The AWS AccountID. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#accountid"
+    Description: 'The AWS AccountID. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#accountid'
     Export:
       Name: !Sub "${AWS::StackName}-account-id"
     Value: !Sub "${AWS::AccountId}"
 
   DatabaseHostCore:
-    Description: "Hostname of the Core database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasehostcore"
+    Description: 'Hostname of the Core database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasehostcore'
     Export:
       Name: !Sub "${AWS::StackName}-database-host-core"
     Value: !If
@@ -1395,7 +1486,7 @@ Outputs:
       - !GetAtt RdsDbClusterCore.Endpoint.Address
 
   DatabaseHostLibfeat:
-    Description: "Hostname of the Libfeat database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasehostlibfeat"
+    Description: 'Hostname of the Libfeat database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasehostlibfeat'
     Export:
       Name: !Sub "${AWS::StackName}-database-host-libfeat"
     Value: !If
@@ -1404,7 +1495,7 @@ Outputs:
       - !GetAtt RdsDbClusterLibfeat.Endpoint.Address
 
   DatabaseHostRes:
-    Description: "Hostname of the Res database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasehostres"
+    Description: 'Hostname of the Res database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasehostres'
     Export:
       Name: !Sub "${AWS::StackName}-database-host-res"
     Value: !If
@@ -1413,19 +1504,19 @@ Outputs:
       - !GetAtt RdsDbClusterRes.Endpoint.Address
 
   DatabaseName:
-    Description: "The name of the database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasename"
+    Description: 'The name of the database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasename'
     Export:
       Name: !Sub "${AWS::StackName}-database-name"
     Value: !FindInMap [Constants, Database, Name]
 
   DatabasePassword:
-    Description: "The randomly generated password for the administrative user (DatabaseUsername). Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasepassword"
+    Description: 'The randomly generated password for the administrative user (DatabaseUsername). Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasepassword'
     Export:
       Name: !Sub "${AWS::StackName}-database-password"
     Value: !GetAtt LambdaRunnerDbPassword.RandomString
 
   DatabasePortCore:
-    Description: "The port number that will accept connections on the Core database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databaseportcore"
+    Description: 'The port number that will accept connections on the Core database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databaseportcore'
     Export:
       Name: !Sub "${AWS::StackName}-database-port-core"
     Value: !If
@@ -1434,7 +1525,7 @@ Outputs:
       - !GetAtt RdsDbClusterCore.Endpoint.Port
 
   DatabasePortLibfeat:
-    Description: "The port number that will accept connections on the Libfeat database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databaseportlibfeat"
+    Description: 'The port number that will accept connections on the Libfeat database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databaseportlibfeat'
     Export:
       Name: !Sub "${AWS::StackName}-database-port-libfeat"
     Value: !If
@@ -1443,7 +1534,7 @@ Outputs:
       - !GetAtt RdsDbClusterLibfeat.Endpoint.Port
 
   DatabasePortRes:
-    Description: "The port number that will accept connections on the Res database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databaseportres"
+    Description: 'The port number that will accept connections on the Res database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databaseportres'
     Export:
       Name: !Sub "${AWS::StackName}-database-port-res"
     Value: !If
@@ -1452,55 +1543,56 @@ Outputs:
       - !GetAtt RdsDbClusterRes.Endpoint.Port
 
   DatabaseUsername:
-    Description: "The administrative user name. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databaseusername"
+    Description: 'The administrative user name. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databaseusername'
     Export:
       Name: !Sub "${AWS::StackName}-database-username"
     Value: !FindInMap [Constants, Database, Username]
 
   Ec2InternetGateway:
-    Description: "Internet Gateway. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#ec2internetgateway"
+    Description: 'Internet Gateway. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#ec2internetgateway'
     Export:
       Name: !Sub "${AWS::StackName}-ec2-internet-gateway"
     Value: !Ref Ec2InternetGateway
 
   Ec2SecurityGroupInternal:
-    Description: "The security group used internally. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#ec2securitygroupinternal"
+    Description: 'The security group used internally. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#ec2securitygroupinternal'
     Export:
       Name: !Sub "${AWS::StackName}-ec2-security-group-internal"
     Value: !Ref Ec2SecurityGroupInternal
 
   Ec2Vpc:
-    Description: "The ID of the VPC. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#ec2vpc"
+    Description: 'The ID of the VPC. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#ec2vpc'
     Export:
       Name: !Sub "${AWS::StackName}-ec2-VpcId"
     Value: !Ref Ec2Vpc
 
   Ec2VpcCidrBlock:
-    Description: "The CidrBloc of the VPC. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#ec2vpccidrblock"
+    Description: 'The CidrBloc of the VPC. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#ec2vpccidrblock'
     Export:
       Name: !Sub "${AWS::StackName}-ec2-VpcId-cidrblock"
     Value: !GetAtt Ec2Vpc.CidrBlock
 
   SubnetPrivate1:
-    Description: "The ID of private subnet 1. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#subnetprivate1"
+    Description: 'The ID of private subnet 1. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#subnetprivate1'
     Export:
       Name: !Sub "${AWS::StackName}-subnet-private-1"
     Value: !Ref Ec2SubnetPrivate1
 
   SubnetPrivate2:
-    Description: "The ID of private subnet 2. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#subnetprivate2"
+    Description: 'The ID of private subnet 2. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#subnetprivate2'
     Export:
       Name: !Sub "${AWS::StackName}-subnet-private-2"
     Value: !Ref Ec2SubnetPrivate2
 
   SubnetPublic1:
-    Description: "The ID of public subnet 1. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#subnetpublic1"
+    Description: 'The ID of public subnet 1. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#subnetpublic1'
     Export:
       Name: !Sub "${AWS::StackName}-subnet-public-1"
     Value: !Ref Ec2SubnetPublic1
 
   SubnetPublic2:
-    Description: "The ID of public subnet 2. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#subnetpublic2"
+    Description: 'The ID of public subnet 2. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#subnetpublic2'
     Export:
       Name: !Sub "${AWS::StackName}-subnet-public-2"
     Value: !Ref Ec2SubnetPublic2
+
