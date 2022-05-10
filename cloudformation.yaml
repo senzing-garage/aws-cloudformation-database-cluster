@@ -83,8 +83,7 @@ Mappings:
       Name: G2
       Username: senzing
     Images:
-      PostgresClient: docker.io/senzing/postgresql-client:2.0.1
-      # PostgresClient: public.ecr.aws/senzing/postgresql-client:1.1.2
+      PostgresClient: public.ecr.aws/senzing/postgresql-client:2.0.2
     Stack:
       Name: database-cluster
   VpcCidrs:
