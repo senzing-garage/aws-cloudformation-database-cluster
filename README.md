@@ -40,4 +40,4 @@ For more details, see [details of deployment](docs/README.md).
 ## Additional topics
 
 1. [Details of deployment](docs/README.md)
-1. [How to migrate an AWS RDS database](https://github.com/Senzing/knowledge-base/blob/master/HOWTO/migrate-aws-rds-database.md)
+1. [How to migrate an AWS RDS database](https://github.com/Senzing/knowledge-base/blob/main/HOWTO/migrate-aws-rds-database.md)
