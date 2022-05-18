@@ -19,8 +19,17 @@ For more details, see [details of deployment](docs/README.md).
    With appropriate permissions, the
    [AWS Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/)
    can help evaluate costs.
-1. Visit [AWS Cloudformation with Senzing template](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=senzing-db&templateURL=https://s3.amazonaws.com/public-read-access/aws-cloudformation-database-cluster/cloudformation.yaml)
-1. At lower-right, click on "Next" button.
+1. Download the appropriate [AWS Cloudformation template example](https://raw.githubusercontent.com/Senzing/aws-cloudformation-database-cluster/main/cloudformation.yaml) from this repository to your local device.  Example:
+    ```
+    curl -X GET \
+        --output ~/cloudformation.yaml \
+        https://raw.githubusercontent.com/Senzing/aws-cloudformation-database-cluster/main/cloudformation.yaml
+    ```
+3. It is highly suggested to take a look at the AWS Cloudformation Template that has been downloaded.  This template is an example that deploys and configures a number of services and facilities.  While it is a working example, each business may have different requirements and their account may not have all the privledges required to deploy it.  Furthermore, the examples change over time and these files are meant to be treated as code files so they should be put under source control.
+1. Visit the [AWS Cloudformation home](https://console.aws.amazon.com/cloudformation/home).
+1. At the upper-right, click the "Create stack" drop-down and choose "With new resources (standard)".
+1. In the "Specify template" area choose the "Upload a template file" radio button.
+1. Select the "Choose file" button and choose the AWS Cloudformation template that was downloaded previously.1. At lower-right, click on "Next" button.
 1. In **Specify stack details**
     1. In **Parameters**
         1. In **Senzing installation**
