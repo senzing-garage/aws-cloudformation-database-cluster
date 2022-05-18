@@ -25,7 +25,7 @@ For more details, see [details of deployment](docs/README.md).
         --output ~/cloudformation.yaml \
         https://raw.githubusercontent.com/Senzing/aws-cloudformation-database-cluster/main/cloudformation.yaml
     ```
-3. It is highly suggested to take a look at the AWS Cloudformation Template that has been downloaded.  This template is an example that deploys and configures a number of services and facilities.  While it is a working and complete example, each business may have different requirements and their account may not have all the privledges required to deploy it.  Furthermore, the examples change over time and these files are meant to be treated as code files so they should be put under source control.
+3. It is highly suggested to take a look at the AWS Cloudformation Template that has been downloaded.  This template is an example that deploys and configures a number of services and facilities.  While it is a working example, each business may have different requirements and their account may not have all the privledges required to deploy it.  Furthermore, the examples change over time and these files are meant to be treated as code files so they should be put under source control.
 1. Visit the [AWS Cloudformation home](https://console.aws.amazon.com/cloudformation/home).
 1. At the upper-right, click the "Create stack" drop-down and choose "With new resources (standard)".
 1. In the "Specify template" area choose the "Upload a template file" radio button.
