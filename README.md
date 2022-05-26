@@ -29,8 +29,11 @@ For more details, see [details of deployment](docs/README.md).
 1. Visit the [AWS Cloudformation home](https://console.aws.amazon.com/cloudformation/home).
 1. At the upper-right, click the "Create stack" drop-down and choose "With new resources (standard)".
 1. In the "Specify template" area choose the "Upload a template file" radio button.
-1. Select the "Choose file" button and choose the AWS Cloudformation template that was downloaded previously.1. At lower-right, click on "Next" button.
+1. Select the "Choose file" button and choose the AWS Cloudformation template that was downloaded previously.
+1. At lower-right, click on "Next" button.
 1. In **Specify stack details**
+    1. In **Stack name**
+        1. Choose a stack name that is unique to you and 21 characters or less.  (Several resource types have a limit of 32 character names. The CFT uses the stack name and an 11 character suffix to name resources uniquely.)
     1. In **Parameters**
         1. In **Senzing installation**
             1. If speed is desired over lower cost, choose "Multiple".
