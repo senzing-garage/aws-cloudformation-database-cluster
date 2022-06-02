@@ -1480,6 +1480,15 @@ Outputs:
       Name: !Sub "${AWS::StackName}-ec2-VpcId-cidrblock"
     Value: !GetAtt Ec2Vpc.CidrBlock
 
+  ImageVersions:
+    Description: "List of Docker images used in this stack."
+    Export:
+      Name: !Sub "${AWS::StackName}-image-versions"
+    Value: !Join
+      - ""
+      - - "PostgresClient:"
+        - !FindInMap [Constants, Images, PostgresClient]
+
   SubnetPrivate1:
     Description: "The ID of private subnet 1. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#subnetprivate1"
     Export:
