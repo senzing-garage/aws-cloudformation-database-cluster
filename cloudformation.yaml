@@ -945,7 +945,8 @@ Resources:
                           response_data = client.modify_db_cluster(
                               DBClusterIdentifier = cluster_id,
                               ScalingConfiguration = {
-                                  'TimeoutAction': 'ForceApplyCapacityChange'
+                                  'TimeoutAction': 'ForceApplyCapacityChange',
+                                  'SecondsBeforeTimeout': 60
                               },
                           )
                       else:
