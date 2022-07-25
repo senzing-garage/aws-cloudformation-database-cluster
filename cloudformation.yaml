@@ -1383,16 +1383,16 @@ Outputs:
     Description: "The AWS AccountID. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#accountid"
     Export:
       Name: !Sub "${AWS::StackName}-account-id"
-    Value: !If
-      - IfSingleDatabase
-      - "SQL"
-      - "HYBRID"
+    Value: !Sub "${AWS::AccountId}"
 
   DatabaseConfiguration:
     Description: "The configuration this database was set up as.  Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#multipledatabases"
     Export:
       Name: !Sub "${AWS::StackName}-database-configuration"
-    Value: !Ref MultipleDatabases
+    Value: !If
+      - IfSingleDatabase
+      - "SQL"
+      - "HYBRID"
 
   DatabaseHostCore:
     Description: "Hostname of the Core database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasehostcore"
