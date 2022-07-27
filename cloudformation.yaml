@@ -1389,10 +1389,7 @@ Outputs:
     Description: "The configuration this database was set up as.  Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#multipledatabases"
     Export:
       Name: !Sub "${AWS::StackName}-database-configuration"
-    Value: !If
-      - IfSingleDatabase
-      - "Single"
-      - "Multiple"
+    Value: !Ref MultipleDatabases
 
   DatabaseHostCore:
     Description: "Hostname of the Core database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasehostcore"
