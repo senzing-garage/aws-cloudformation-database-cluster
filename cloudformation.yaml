@@ -1385,12 +1385,6 @@ Outputs:
       Name: !Sub "${AWS::StackName}-account-id"
     Value: !Sub "${AWS::AccountId}"
 
-  DatabaseConfiguration:
-    Description: "The configuration this database was set up as.  Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#multipledatabases"
-    Export:
-      Name: !Sub "${AWS::StackName}-database-configuration"
-    Value: !Ref MultipleDatabases
-
   DatabaseHostCore:
     Description: "Hostname of the Core database. Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#databasehostcore"
     Export:
