@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - added SecondsBeforeTimeout setting
--
+- updated database engine version
 
 ## [1.2.5] - 2022-06-10
 
