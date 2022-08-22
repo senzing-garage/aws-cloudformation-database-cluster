@@ -83,7 +83,6 @@ Mappings:
       Name: G2
       Username: senzing
     Images:
-      # PostgresClient: public.ecr.aws/senzing/postgresql-client:2.1.0
       InitPostgresql: docker.io/senzing/init-postgresql:staging
     Stack:
       Name: database-cluster
@@ -1127,7 +1126,6 @@ Resources:
       - DbClusterCoreReady
       - DbClusterLibfeatReady
       - DbClusterResReady
-      # - LambdaRunnerInitPostgresCore
     Properties:
       ClusterId: !Ref EcsCluster
       RunTaskParameters:
@@ -1153,93 +1151,6 @@ Resources:
         - Key: Name
           Value: !Sub "${AWS::StackName}-lambda-runner-init-postgres-configuration"
     Type: Custom::LambdaRunnerInitPostgresConfiguration
-
-  # LambdaRunnerInitPostgresCore:
-  #   DependsOn:
-  #     - DbClusterCoreReady
-  #   Properties:
-  #     ClusterId: !Ref EcsCluster
-  #     RunTaskParameters:
-  #       # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ecs.html#ECS.Client.run_task
-  #       cluster: !Ref EcsCluster
-  #       count: 1
-  #       launchType: FARGATE
-  #       networkConfiguration:
-  #         awsvpcConfiguration:
-  #           assignPublicIp: DISABLED
-  #           securityGroups:
-  #             - !Ref Ec2SecurityGroupLambdaRunner
-  #           subnets:
-  #             - !Ref Ec2SubnetPrivate1
-  #             - !Ref Ec2SubnetPrivate2
-  #       platformVersion: 1.4.0
-  #       tags:
-  #         - key: Name
-  #           value: !Sub "${AWS::StackName}-lambda-runner-init-postgres-core-run-task-parameters"
-  #       taskDefinition: !Ref EcsTaskDefinitionInitPostgresCore
-  #     ServiceToken: !GetAtt LambdaFunctionRunTaskAndWait.Arn
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Sub "${AWS::StackName}-lambda-runner-init-postgres-core"
-  #   Type: Custom::LambdaRunnerInitPostgresCore
-
-  # LambdaRunnerInitPostgresLibfeat:
-  #   DependsOn:
-  #     - DbClusterLibfeatReady
-  #   Properties:
-  #     ClusterId: !Ref EcsCluster
-  #     RunTaskParameters:
-  #       # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ecs.html#ECS.Client.run_task
-  #       cluster: !Ref EcsCluster
-  #       count: 1
-  #       launchType: FARGATE
-  #       networkConfiguration:
-  #         awsvpcConfiguration:
-  #           assignPublicIp: DISABLED
-  #           securityGroups:
-  #             - !Ref Ec2SecurityGroupLambdaRunner
-  #           subnets:
-  #             - !Ref Ec2SubnetPrivate1
-  #             - !Ref Ec2SubnetPrivate2
-  #       platformVersion: 1.4.0
-  #       tags:
-  #         - key: Name
-  #           value: !Sub "${AWS::StackName}-lambda-runner-init-postgres-libfeat-run-task-parameters"
-  #       taskDefinition: !Ref EcsTaskDefinitionInitPostgresLibfeat
-  #     ServiceToken: !GetAtt LambdaFunctionRunTaskAndWait.Arn
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Sub "${AWS::StackName}-lambda-runner-init-postgres-libfeat"
-  #   Type: Custom::LambdaRunnerInitPostgresLibfeat
-
-  # LambdaRunnerInitPostgresRes:
-  #   DependsOn:
-  #     - DbClusterResReady
-  #   Properties:
-  #     ClusterId: !Ref EcsCluster
-  #     RunTaskParameters:
-  #       # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ecs.html#ECS.Client.run_task
-  #       cluster: !Ref EcsCluster
-  #       count: 1
-  #       launchType: FARGATE
-  #       networkConfiguration:
-  #         awsvpcConfiguration:
-  #           assignPublicIp: DISABLED
-  #           securityGroups:
-  #             - !Ref Ec2SecurityGroupLambdaRunner
-  #           subnets:
-  #             - !Ref Ec2SubnetPrivate1
-  #             - !Ref Ec2SubnetPrivate2
-  #       platformVersion: 1.4.0
-  #       tags:
-  #         - key: Name
-  #           value: !Sub "${AWS::StackName}-lambda-runner-init-postgres-res-run-task-parameters"
-  #       taskDefinition: !Ref EcsTaskDefinitionInitPostgresRes
-  #     ServiceToken: !GetAtt LambdaFunctionRunTaskAndWait.Arn
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Sub "${AWS::StackName}-lambda-runner-init-postgres-res"
-  #   Type: Custom::LambdaRunnerInitPostgresRes
 
   LambdaRunnerSenzingEngineConfigurationJson:
     Properties:
@@ -1345,22 +1256,8 @@ Resources:
               Value: en_US.utf8
             - Name: SENZING_SUBCOMMAND
               Value: mandatory
-            # - Name: SENZING_DATABASE_URL
-            #   Value: !Sub
-            #     - "postgresql://${DatabaseUsername}:${DatabasePassword}@${DatabaseAddress}:${DatabasePort}/${DatabaseName}"
-            #     - DatabaseUsername: !FindInMap [Constants, Database, Username]
-            #       DatabasePassword: !GetAtt LambdaRunnerDbPassword.RandomString
-            #       DatabaseName: !FindInMap [Constants, Database, Name]
-            #       DatabaseAddress: !If
-            #         - IfSingleDatabase
-            #         - !GetAtt RdsDbCluster.Endpoint.Address
-            #         - !GetAtt RdsDbClusterCore.Endpoint.Address
-            #       DatabasePort: !If
-            #         - IfSingleDatabase
-            #         - !GetAtt RdsDbCluster.Endpoint.Port
-            #         - !GetAtt RdsDbClusterCore.Endpoint.Port
-            # - Name: SENZING_SQL_FILE
-            #   Value: /app/insert-senzing-configuration.sql
+            - Name: SENZING_DEBUG
+              Value: False
           Essential: true
           Image: !FindInMap [Constants, Images, InitPostgresql]
           LogConfiguration:
@@ -1383,135 +1280,6 @@ Resources:
         - Key: Name
           Value: !Sub "${AWS::StackName}-ecs-task-definition-init-postgres-configuration"
     Type: AWS::ECS::TaskDefinition
-
-  # EcsTaskDefinitionInitPostgresCore:
-  #   Properties:
-  #     ContainerDefinitions:
-  #       - Environment:
-  #           - Name: SENZING_DATABASE_URL
-  #             Value: !Sub
-  #               - "postgresql://${DatabaseUsername}:${DatabasePassword}@${DatabaseAddress}:${DatabasePort}/${DatabaseName}"
-  #               - DatabaseUsername: !FindInMap [Constants, Database, Username]
-  #                 DatabasePassword: !GetAtt LambdaRunnerDbPassword.RandomString
-  #                 DatabaseName: !FindInMap [Constants, Database, Name]
-  #                 DatabaseAddress: !If
-  #                   - IfSingleDatabase
-  #                   - !GetAtt RdsDbCluster.Endpoint.Address
-  #                   - !GetAtt RdsDbClusterCore.Endpoint.Address
-  #                 DatabasePort: !If
-  #                   - IfSingleDatabase
-  #                   - !GetAtt RdsDbCluster.Endpoint.Port
-  #                   - !GetAtt RdsDbClusterCore.Endpoint.Port
-  #           - Name: SENZING_SQL_FILE
-  #             Value: /opt/senzing/g2/resources/schema/g2core-schema-postgresql-create.sql
-  #         Essential: true
-  #         Image: !FindInMap [Constants, Images, PostgresClient]
-  #         LogConfiguration:
-  #           LogDriver: awslogs
-  #           Options:
-  #             awslogs-group: !Ref LogsLogGroupMain
-  #             awslogs-region: !Ref AWS::Region
-  #             awslogs-stream-prefix: job
-  #         Name: postgresinit
-  #         Privileged: false
-  #         ReadonlyRootFilesystem: false
-  #     Cpu: "512"
-  #     ExecutionRoleArn: !GetAtt IamRoleInitPostgres.Arn
-  #     Family: !Sub "${AWS::StackName}-task-definition-init-postgres-core"
-  #     Memory: "1024"
-  #     NetworkMode: awsvpc
-  #     RequiresCompatibilities:
-  #       - FARGATE
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Sub "${AWS::StackName}-ecs-task-definition-init-postgres-core"
-  #   Type: AWS::ECS::TaskDefinition
-
-  # EcsTaskDefinitionInitPostgresLibfeat:
-  #   Properties:
-  #     ContainerDefinitions:
-  #       - Environment:
-  #           - Name: SENZING_DATABASE_URL
-  #             Value: !Sub
-  #               - "postgresql://${DatabaseUsername}:${DatabasePassword}@${DatabaseAddress}:${DatabasePort}/${DatabaseName}"
-  #               - DatabaseUsername: !FindInMap [Constants, Database, Username]
-  #                 DatabasePassword: !GetAtt LambdaRunnerDbPassword.RandomString
-  #                 DatabaseName: !FindInMap [Constants, Database, Name]
-  #                 DatabaseAddress: !If
-  #                   - IfSingleDatabase
-  #                   - !GetAtt RdsDbCluster.Endpoint.Address
-  #                   - !GetAtt RdsDbClusterLibfeat.Endpoint.Address
-  #                 DatabasePort: !If
-  #                   - IfSingleDatabase
-  #                   - !GetAtt RdsDbCluster.Endpoint.Port
-  #                   - !GetAtt RdsDbClusterLibfeat.Endpoint.Port
-  #           - Name: SENZING_SQL_FILE
-  #             Value: /opt/senzing/g2/resources/schema/g2core-schema-postgresql-create.sql
-  #         Essential: true
-  #         Image: !FindInMap [Constants, Images, PostgresClient]
-  #         LogConfiguration:
-  #           LogDriver: awslogs
-  #           Options:
-  #             awslogs-group: !Ref LogsLogGroupMain
-  #             awslogs-region: !Ref AWS::Region
-  #             awslogs-stream-prefix: job
-  #         Name: postgresinit
-  #         Privileged: false
-  #         ReadonlyRootFilesystem: false
-  #     Cpu: "512"
-  #     ExecutionRoleArn: !GetAtt IamRoleInitPostgres.Arn
-  #     Family: !Sub "${AWS::StackName}-task-definition-init-postgres-libfeat"
-  #     Memory: "1024"
-  #     NetworkMode: awsvpc
-  #     RequiresCompatibilities:
-  #       - FARGATE
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Sub "${AWS::StackName}-ecs-task-definition-init-postgres-libfeat"
-  #   Type: AWS::ECS::TaskDefinition
-
-  # EcsTaskDefinitionInitPostgresRes:
-  #   Properties:
-  #     ContainerDefinitions:
-  #       - Environment:
-  #           - Name: SENZING_DATABASE_URL
-  #             Value: !Sub
-  #               - "postgresql://${DatabaseUsername}:${DatabasePassword}@${DatabaseAddress}:${DatabasePort}/${DatabaseName}"
-  #               - DatabaseUsername: !FindInMap [Constants, Database, Username]
-  #                 DatabasePassword: !GetAtt LambdaRunnerDbPassword.RandomString
-  #                 DatabaseName: !FindInMap [Constants, Database, Name]
-  #                 DatabaseAddress: !If
-  #                   - IfSingleDatabase
-  #                   - !GetAtt RdsDbCluster.Endpoint.Address
-  #                   - !GetAtt RdsDbClusterRes.Endpoint.Address
-  #                 DatabasePort: !If
-  #                   - IfSingleDatabase
-  #                   - !GetAtt RdsDbCluster.Endpoint.Port
-  #                   - !GetAtt RdsDbClusterRes.Endpoint.Port
-  #           - Name: SENZING_SQL_FILE
-  #             Value: /opt/senzing/g2/resources/schema/g2core-schema-postgresql-create.sql
-  #         Essential: true
-  #         Image: !FindInMap [Constants, Images, PostgresClient]
-  #         LogConfiguration:
-  #           LogDriver: awslogs
-  #           Options:
-  #             awslogs-group: !Ref LogsLogGroupMain
-  #             awslogs-region: !Ref AWS::Region
-  #             awslogs-stream-prefix: job
-  #         Name: postgresinit
-  #         Privileged: false
-  #         ReadonlyRootFilesystem: false
-  #     Cpu: "512"
-  #     ExecutionRoleArn: !GetAtt IamRoleInitPostgres.Arn
-  #     Family: !Sub "${AWS::StackName}-task-definition-init-postgres-res"
-  #     Memory: "1024"
-  #     NetworkMode: awsvpc
-  #     RequiresCompatibilities:
-  #       - FARGATE
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Sub "${AWS::StackName}-ecs-task-definition-init-postgres-res"
-  #   Type: AWS::ECS::TaskDefinition
 
 # -----------------------------------------------------------------------------
 # Outputs

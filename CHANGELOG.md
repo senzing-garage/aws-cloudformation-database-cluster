@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - added SecondsBeforeTimeout setting
 - updated database engine version
+- updated to use the init Postgresql image
 
 ## [1.2.5] - 2022-06-10
 
