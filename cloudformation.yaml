@@ -83,7 +83,7 @@ Mappings:
       Name: G2
       Username: senzing
     Images:
-      InitPostgresql: docker.io/senzing/init-postgresql:staging
+      InitPostgresql: public.ecr.aws/senzing/init-postgresql:1.0.3
     Stack:
       Name: database-cluster
   VpcCidrs:
