@@ -36,15 +36,15 @@ For more details, see [details of deployment](docs/README.md).
         1. Choose a stack name that is unique to you and 21 characters or less.  (Several resource types have a limit of 32 character names. The CFT uses the stack name and an 11 character suffix to name resources uniquely.)
     1. In **Parameters**
         1. In **Senzing installation**
-            1. If speed is desired over lower cost, choose "Multiple".
-            1. If lower cost is desired over speed, choose "Single".
+            1. If you plan on loading billions of records, choose "Multiple".
+            1. Otherwise, choose "Single".
         1. In **Security responsibility**
             1. Understand the nature of the security in the deployment.
             1. Once understood, enter "I AGREE".
     1. At lower-right, click "Next" button.
 1. In **Configure stack options**
     1. At lower-right, click "Next" button.
-1. In **Review senzing-db**
+1. In **Review senzing database stack**
     1. Near the bottom, in **Capabilities**
         1. Check ":ballot_box_with_check: I acknowledge that AWS CloudFormation might create IAM resources."
     1. At lower-right, click "Create stack" button.
