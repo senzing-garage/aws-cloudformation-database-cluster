@@ -48,7 +48,7 @@ Parameters:
     AllowedValues:
       - "Single"
       - "Multiple"
-    Default: "Multiple"
+    Default: "Single"
     Description: "Help: https://hub.senzing.com/aws-cloudformation-database-cluster/#multipledatabases"
     Type: String
 
