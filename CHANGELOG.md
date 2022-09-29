@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -
 
+## [1.3.1] - 2022-09-29
+
+### Changed in 1.3.1
+
+- updated to Senzing 3.3.0
+- default to Single database
+
 ## [1.3.0] - 2022-08-29
 
 ### Changed in 1.3.0
