@@ -554,8 +554,10 @@ Resources:
       Description: !Sub "${AWS::StackName}-rds-db-cluster-parameter-group-description"
       Family: aurora-postgresql11
       Parameters:
-        "synchronous_commit": "off"
         autovacuum_max_workers: 5
+        enable_seqscan: 0
+        pglogical.synchronous_commit: 0
+        synchronous_commit: "off"
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-rds-db-cluster-parameter-group"
