@@ -83,7 +83,7 @@ Mappings:
       Name: G2
       Username: senzing
     Images:
-      InitPostgresql: public.ecr.aws/senzing/init-postgresql:1.1.4
+      InitPostgresql: public.ecr.aws/senzing/init-postgresql:1.1.6
     Stack:
       Name: database-cluster
   VpcCidrs:
