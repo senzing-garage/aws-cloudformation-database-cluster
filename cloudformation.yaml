@@ -715,7 +715,7 @@ Resources:
       MasterUserPassword: !GetAtt LambdaRunnerDbPassword.RandomString
       ScalingConfiguration:
         AutoPause: true
-        MaxCapacity: 192
+        MaxCapacity: 384
         MinCapacity: 2
         SecondsUntilAutoPause: 3600
       #       FIXME:  Uncomment once 'TimeoutAction' is supported.
