@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed in 1.3.4
 
+- updated to Senzing 3.5.0
+- removed Senzing v2 CFT
+
+## [1.3.4] - 2023-01-16
+
+### Changed in 1.3.4
+
 - updated to Senzing 3.4.0
 - updated database parameters
 
