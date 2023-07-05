@@ -83,7 +83,7 @@ Mappings:
       Name: G2
       Username: senzing
     Images:
-      InitPostgresql: public.ecr.aws/senzing/init-postgresql:1.1.11
+      InitPostgresql: public.ecr.aws/senzing/init-database:0.2.6
     Stack:
       Name: database-cluster
   VpcCidrs:
@@ -1252,7 +1252,7 @@ Resources:
     Properties:
       ContainerDefinitions:
         - Environment:
-            - Name: SENZING_ENGINE_CONFIGURATION_JSON
+            - Name: SENZING_TOOLS_ENGINE_CONFIGURATION_JSON
               Value: !GetAtt LambdaRunnerSenzingEngineConfigurationJson.ConfigJSON
             - Name: LC_CTYPE
               Value: en_US.utf8
