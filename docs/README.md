@@ -3,13 +3,13 @@
 ## Synopsis
 
 The
-[aws-cloudformation-database-cluster](https://github.com/Senzing/aws-cloudformation-database-cluster)
+[aws-cloudformation-database-cluster](https://github.com/senzing-garage/aws-cloudformation-database-cluster)
 AWS Cloudformation template creates an AWS VPC
 and Aurora Postgres serverless database deployment.
 The Cloudformation does not deploy Senzing.
 Rather, it deploys a database than can be used by other AWS Cloudformations
 which do deploy Senzing such as
-[aws-cloudformation-ecs-senzing-stack-basic](https://github.com/Senzing/aws-cloudformation-ecs-senzing-stack-basic).
+[aws-cloudformation-ecs-senzing-stack-basic](https://github.com/senzing-garage/aws-cloudformation-ecs-senzing-stack-basic).
 
 ## Overview
 
@@ -32,7 +32,7 @@ The following diagram shows a simplified representation of this deployment.
 ![Image of architecture](architecture.png)
 
 GitHub repository for
-[aws-cloudformation-database-cluster](https://github.com/Senzing/aws-cloudformation-database-cluster).
+[aws-cloudformation-database-cluster](https://github.com/senzing-garage/aws-cloudformation-database-cluster).
 
 ### Contents
 
@@ -49,12 +49,12 @@ GitHub repository for
 
 At [Senzing](http://senzing.com),
 we strive to create GitHub documentation in a
-"[don't make me think](https://github.com/Senzing/knowledge-base/blob/main/WHATIS/dont-make-me-think.md)" style.
+"[don't make me think](https://github.com/senzing-garage/knowledge-base/blob/main/WHATIS/dont-make-me-think.md)" style.
 For the most part, instructions are copy and paste.
 Whenever thinking is needed, it's marked with a "thinking" icon :thinking:.
 Whenever customization is needed, it's marked with a "pencil" icon :pencil2:.
 If the instructions are not clear, please let us know by opening a new
-[Documentation issue](https://github.com/Senzing/aws-cloudformation-database-cluster/issues/new?template=documentation_request.md)
+[Documentation issue](https://github.com/senzing-garage/aws-cloudformation-database-cluster/issues/new?template=documentation_request.md)
 describing where we can improve.   Now on with the show...
 
 ### Legend
@@ -69,7 +69,7 @@ describing where we can improve.   Now on with the show...
 
 - **Time:** Budget 40 minutes to get the demonstration up-and-running.
 - **Background knowledge:** This repository assumes a working knowledge of:
-  - [AWS Cloudformation](https://github.com/Senzing/knowledge-base/blob/main/WHATIS/aws-cloudformation.md)
+  - [AWS Cloudformation](https://github.com/senzing-garage/knowledge-base/blob/main/WHATIS/aws-cloudformation.md)
 
 ## Demonstrate using AWS Console
 
@@ -102,18 +102,18 @@ describing where we can improve.   Now on with the show...
 1. By itself, this deployment doesn't do much.
    It is simply the database deployment to be used by subsequent Cloudformations.
 1. Example subsequent deployments:
-    1. [aws-cloudformation-ecs-senzing-stack-basic](https://github.com/Senzing/aws-cloudformation-ecs-senzing-stack-basic)
-    1. [aws-cloudformation-ecs-senzing-stack-choices](https://github.com/Senzing/aws-cloudformation-ecs-senzing-stack-choices)
-    1. [aws-marketplace-evaluation](https://github.com/Senzing/aws-marketplace-evaluation)
+    1. [aws-cloudformation-ecs-senzing-stack-basic](https://github.com/senzing-garage/aws-cloudformation-ecs-senzing-stack-basic)
+    1. [aws-cloudformation-ecs-senzing-stack-choices](https://github.com/senzing-garage/aws-cloudformation-ecs-senzing-stack-choices)
+    1. [aws-marketplace-evaluation](https://github.com/senzing-garage/aws-marketplace-evaluation)
 
 ## Additional topics
 
-1. [How to migrate an AWS RDS database](https://github.com/Senzing/knowledge-base/blob/main/HOWTO/migrate-aws-rds-database.md)
+1. [How to migrate an AWS RDS database](https://github.com/senzing-garage/knowledge-base/blob/main/HOWTO/migrate-aws-rds-database.md)
 
 ### Review AWS Cloudformation
 
 The AWS resources created by the
-[cloudformation.yaml](https://github.com/Senzing/aws-cloudformation-database-cluster/blob/main/cloudformation.yaml)
+[cloudformation.yaml](https://github.com/senzing-garage/aws-cloudformation-database-cluster/blob/main/cloudformation.yaml)
 template can be see in the [AWS Management Console](https://console.aws.amazon.com).
 
 1. CloudFormation
