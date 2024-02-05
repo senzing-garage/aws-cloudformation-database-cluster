@@ -1,9 +1,9 @@
-name: Copy CFTs to S3
+name: copy to s3
 
 on:
-  release:
-    types:
-      - published
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
   Copy_CFTs_to_S3:
@@ -19,8 +19,8 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_S3_COPY }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3_COPY }}
           aws-region: us-east-1
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3_COPY }}
 
       - name: Get the version of the just published release
         id: get_version
