@@ -1,30 +1,37 @@
-name: Copy CFTs to S3
+name: copy to s3
+
 on:
-  release:
-    types:
-      - published
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+
 jobs:
   Copy_CFTs_to_S3:
     runs-on: ubuntu-latest
     name: Copy CFTs to S3
     env:
       FILE_TO_COPY_1: cloudformation
+
     steps:
       - uses: actions/checkout@v4
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_S3_COPY }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3_COPY }}
           aws-region: us-east-1
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_S3_COPY }}
+
       - name: Get the version of the just published release
         id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+        run: echo "VERSION=${GITHUB_REF_NAME}" >> "$GITHUB_ENV"
+
       - name: Copy ${{ env.FILE_TO_COPY_1 }}.yaml to S3 and make public
         run: |
           aws s3 cp ${{ env.FILE_TO_COPY_1 }}.yaml s3://${{ secrets.SENZING_AWS_BUCKET_NAME }}/aws-cloudformation-database-cluster/${{ env.FILE_TO_COPY_1 }}.yaml
           aws s3api put-object-acl --bucket ${{ secrets.SENZING_AWS_BUCKET_NAME }} --key aws-cloudformation-database-cluster/${{ env.FILE_TO_COPY_1 }}.yaml --acl public-read
+
       - name: Copy ${{ env.FILE_TO_COPY_1 }}.yaml to S3 with version number and make public
         run: |
-          aws s3 cp ${{ env.FILE_TO_COPY_1 }}.yaml s3://${{ secrets.SENZING_AWS_BUCKET_NAME }}/aws-cloudformation-database-cluster/${{ env.FILE_TO_COPY_1 }}-${{ steps.get_version.outputs.VERSION }}.yaml
-          aws s3api put-object-acl --bucket ${{ secrets.SENZING_AWS_BUCKET_NAME }} --key aws-cloudformation-database-cluster/${{ env.FILE_TO_COPY_1 }}-${{ steps.get_version.outputs.VERSION }}.yaml --acl public-read
+          aws s3 cp ${{ env.FILE_TO_COPY_1 }}.yaml s3://${{ secrets.SENZING_AWS_BUCKET_NAME }}/aws-cloudformation-database-cluster/${{ env.FILE_TO_COPY_1 }}-${{ env.VERSION }}.yaml
+          aws s3api put-object-acl --bucket ${{ secrets.SENZING_AWS_BUCKET_NAME }} --key aws-cloudformation-database-cluster/${{ env.FILE_TO_COPY_1 }}-${{ env.VERSION }}.yaml --acl public-read
