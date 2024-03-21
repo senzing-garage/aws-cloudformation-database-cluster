@@ -10,6 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -
 
+## [1.3.9] - 2024-03-21
+
+### Changed in 1.3.9
+
+- updated to Senzing 3.9.0
+- moved to init-database from init-postgres
+- moved to postgres 13.12
+- updated docker images
+
 ## [1.3.8] - 2023-06-30
 
 ### Changed in 1.3.8
