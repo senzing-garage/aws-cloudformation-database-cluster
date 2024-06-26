@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -
 
+## [1.3.10] - 2024-06-26
+
+### Changed in 1.3.10
+
+- tested with Senzing 3.10.3
+- added new ecs policy
+
 ## [1.3.9] - 2024-03-21
 
 ### Changed in 1.3.9
