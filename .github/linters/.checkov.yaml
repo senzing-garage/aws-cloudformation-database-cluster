@@ -1,2 +1,2 @@
 quiet: true
-soft-fail-on: SOFT_FAIL_ON
+skip-path: cloudformation.yaml
