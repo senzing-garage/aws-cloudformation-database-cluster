@@ -5,6 +5,9 @@ on:
     tags:
       - "[0-9]+.[0-9]+.[0-9]+"
 
+permissions:
+  contents: read
+
 jobs:
   Copy_CFTs_to_S3:
     runs-on: ubuntu-latest
