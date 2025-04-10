@@ -10,10 +10,12 @@ permissions:
 
 jobs:
   Copy_CFTs_to_S3:
-    runs-on: ubuntu-latest
-    name: Copy CFTs to S3
     env:
       FILE_TO_COPY_1: cloudformation
+    outputs:
+      status: ${{ job.status }}
+    runs-on: ubuntu-latest
+    name: Copy CFTs to S3
 
     steps:
       - uses: actions/checkout@v4
@@ -38,3 +40,12 @@ jobs:
         run: |
           aws s3 cp ${{ env.FILE_TO_COPY_1 }}.yaml s3://${{ secrets.SENZING_AWS_BUCKET_NAME }}/aws-cloudformation-database-cluster/${{ env.FILE_TO_COPY_1 }}-${{ env.VERSION }}.yaml
           aws s3api put-object-acl --bucket ${{ secrets.SENZING_AWS_BUCKET_NAME }} --key aws-cloudformation-database-cluster/${{ env.FILE_TO_COPY_1 }}-${{ env.VERSION }}.yaml --acl public-read
+
+  slack-notification:
+    needs: [Copy_CFTs_to_S3]
+    if: ${{ always() && contains(fromJSON('["failure", "cancelled"]'), needs.Copy_CFTs_to_S3.outputs.status) }}
+    secrets:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+    uses: senzing-factory/build-resources/.github/workflows/build-failure-slack-notification.yaml@v2
+    with:
+      job-status: ${{ needs.Copy_CFTs_to_S3.outputs.status }}
