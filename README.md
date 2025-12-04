@@ -1,5 +1,11 @@
 # aws-cloudformation-database-cluster
 
+## :no_entry: Deprecated
+
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
+
+Replaced by our new [Senzing Entity Resolution AWS Marketplace offering](https://aws.amazon.com/marketplace/pp/prodview-p3y2bvjkxcipo?sr=0-1&ref_=beagle&applicationId=AWSMPContessa).
+
 If you are beginning your journey with [Senzing],
 please start with [Senzing Quick Start guides].
 
